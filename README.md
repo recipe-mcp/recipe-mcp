@@ -86,7 +86,7 @@ Just ask your AI assistant about recipes. It will automatically use the recipe t
 
 ---
 
-## Pricing
+## Pricing & Features
 
 ### Free — $0 (no account needed)
 
@@ -95,6 +95,7 @@ Just ask your AI assistant about recipes. It will automatically use the recipe t
 - Random recipe inspiration
 - Extract recipes from **any blog URL** (the secret weapon)
 - List dietary profiles
+- **No setup required** — works immediately after install
 
 ### Plus — $8/year · [Buy Plus](https://recipe-mcp.lemonsqueezy.com/checkout/buy/3fe051d4-2f4a-44ed-98b7-a6d16903c4e6)
 
@@ -103,6 +104,7 @@ Everything in Free, plus:
 - **All 9 recipe sources** unlocked (NYT Cooking, Spoonacular, Edamam, Tasty)
 - **1M+ recipes** from premium databases
 - Unlimited searches (Free tier: 50/day)
+- **Requires setup** — each additional source needs a free API key (see [Source Setup Guide](#source-setup-guide) below)
 
 ### Pro — $19/year · [Buy Pro](https://recipe-mcp.lemonsqueezy.com/checkout/buy/773b1bb9-3c62-4a94-b0f0-a621eda524ca)
 
@@ -117,8 +119,11 @@ Everything in Plus, plus:
 - **Cooking timelines** — step-by-step timing breakdown with active vs passive time
 - **Meal planning** — auto-generate weekly plans with dietary preferences
 - **Grocery lists** — categorized by store aisle, deduplicated
+- **No extra setup** — Pro features work on any recipe from any source. Just set up your sources and go.
 
 ### Activate your license
+
+After purchasing, you'll receive a license key by email. Activate it:
 
 ```
 Ask Claude: "Activate my recipe-mcp license: RMCP-XXXX-XXXX-XXXX"
@@ -129,41 +134,19 @@ Or via CLI:
 recipe-mcp license activate RMCP-XXXX-XXXX-XXXX
 ```
 
----
-
-## All 16 MCP Tools
-
-### Free Tools
-
-| Tool | What it does |
-|------|-------------|
-| `recipe_search` | Search recipes across all your sources at once |
-| `recipe_get` | Get full recipe by ID or URL (auto-detects source) |
-| `recipe_random` | Random recipe for inspiration |
-| `recipe_sources` | See which sources are configured and ready |
-| `recipe_box` | Browse your saved recipes (NYT Cooking) |
-| `recipe_collections` | Browse recipe collections (NYT Cooking) |
-| `recipe_configure` | Set API keys and auth tokens for sources |
-| `recipe_license` | Activate Pro or check license status |
-| `list_diets` | See all available dietary profiles |
-
-### Pro Tools
-
-| Tool | What it does |
-|------|-------------|
-| `recipe_adapt` | Adapt a recipe for dietary needs with smart substitutions |
-| `recipe_analyze_diet` | Check a recipe against ALL 12 diets at once |
-| `recipe_scale` | Scale ingredients up/down + unit conversion |
-| `ingredient_search` | Find recipes from ingredients you have |
-| `cooking_timeline` | Step-by-step timing breakdown |
-| `meal_plan` | Generate weekly meal plans |
-| `grocery_list` | Categorized grocery list from recipes or meal plan |
+To check your current tier: ask Claude *"What's my recipe-mcp license status?"* or run `recipe-mcp license status`.
 
 ---
 
-## Recipe Sources (9 built-in)
+## Source Setup Guide
 
-### Works instantly (no setup)
+recipe-mcp connects to 9 recipe sources. The free ones work instantly. The others need a free API key or your own subscription — here's exactly how to set up each one.
+
+You can configure sources either **through Claude** (just ask in the chat) or **via the CLI**.
+
+### Free sources (work instantly, no setup)
+
+These 5 sources are ready to go the moment you install recipe-mcp:
 
 | Source | What's in it | Size |
 |--------|-------------|------|
@@ -173,23 +156,102 @@ recipe-mcp license activate RMCP-XXXX-XXXX-XXXX
 | **RecipePuppy** | Huge recipe index | 1M+ recipes |
 | **Web Recipe** | Extracts recipes from any blog URL | Unlimited |
 
-### Needs a free API key
+No keys, no accounts, no config. They just work.
 
-| Source | What's in it | Free tier |
-|--------|-------------|-----------|
-| **Spoonacular** | Massive recipe database + nutrition | 150 requests/day |
-| **Edamam** | Recipes + detailed nutrition data | Free trial |
-| **Tasty** (Buzzfeed) | Trendy, popular recipes | RapidAPI free tier |
+### Spoonacular — 1M+ recipes, 150 free requests/day
 
-### Bring your own subscription
+**Tier required:** Plus or Pro
 
-| Source | What's in it |
-|--------|-------------|
-| **NYT Cooking** | Premium recipes, saved recipe box, collections |
+1. Sign up at **https://spoonacular.com/food-api** (free, no credit card needed)
+2. Go to your profile → API Key and copy it
+3. Configure:
+   - **In Claude:** *"Configure Spoonacular with key `your-api-key`"*
+   - **CLI:** `recipe-mcp configure spoonacular` (then paste key when prompted)
+
+### Edamam — 2M+ recipes with nutrition data
+
+**Tier required:** Plus or Pro
+
+1. Sign up at **https://developer.edamam.com** (free tier available, no credit card needed)
+2. Create an application → choose **"Recipe Search API"**
+3. Copy your **Application ID** and **Application Key** (two separate values)
+4. Configure:
+   - **In Claude:** *"Configure Edamam with `YOUR_APP_ID:YOUR_APP_KEY`"* (colon-separated)
+   - **CLI:** `recipe-mcp configure edamam` (then paste `APP_ID:APP_KEY` when prompted)
+
+### Tasty (Buzzfeed) — popular trendy recipes
+
+**Tier required:** Plus or Pro
+
+1. Sign up at **https://rapidapi.com/apidojo/api/tasty** (free tier available)
+2. Subscribe to the Basic (free) plan
+3. Your API key is shown in the **X-RapidAPI-Key** field on any endpoint page — click into any endpoint to see it
+4. Configure:
+   - **In Claude:** *"Configure Tasty with key `your-rapidapi-key`"*
+   - **CLI:** `recipe-mcp configure tasty` (then paste key when prompted)
+
+### NYT Cooking — premium recipes, recipe box, collections
+
+**Tier required:** Plus or Pro
+**Also requires:** An active NYT Cooking subscription ($5/month or $40/year from NYT)
+
+1. Log into **https://cooking.nytimes.com** in your browser
+2. Open DevTools:
+   - **Mac:** Cmd + Option + I
+   - **Windows:** F12
+3. Click the **Application** tab at the top of DevTools
+4. In the left sidebar, expand **Cookies** → click **https://cooking.nytimes.com**
+5. Find the row named **`NYT-S`** and double-click the **Value** column to select it
+6. Copy the value (it's a long string)
+7. Configure:
+   - **In Claude:** *"Configure NYT with cookie `your-NYT-S-value`"*
+   - **CLI:** `recipe-mcp configure nyt` (then paste cookie when prompted)
+
+**Note:** Your NYT-S cookie may expire periodically (typically every few weeks). If you get authentication errors, grab a fresh cookie from your browser using the same steps above.
 
 ### The Web Recipe Adapter (the secret weapon)
 
-Paste **any recipe URL** from any food blog, and recipe-mcp extracts the full structured recipe automatically. It works with thousands of sites including AllRecipes, Serious Eats, Simply Recipes, Bon Appetit, Epicurious, Food Network, King Arthur Baking, Budget Bytes, Smitten Kitchen, Cookie and Kate, Half Baked Harvest, Minimalist Baker, and more.
+**Tier required:** Free (works on all tiers)
+
+No setup needed. Just paste **any recipe URL** from any food blog, and recipe-mcp extracts the full structured recipe automatically. Works with thousands of sites including AllRecipes, Serious Eats, Simply Recipes, Bon Appetit, Epicurious, Food Network, King Arthur Baking, Budget Bytes, Smitten Kitchen, Cookie and Kate, Half Baked Harvest, Minimalist Baker, and more.
+
+Example: *"Get the recipe from https://www.budgetbytes.com/slow-cooker-chili/"*
+
+### Check your sources
+
+To see which sources are configured and ready:
+- **In Claude:** *"Show my recipe sources"*
+- **CLI:** `recipe-mcp sources`
+
+---
+
+## All 16 MCP Tools
+
+### Free Tools (available on all tiers)
+
+| Tool | What it does |
+|------|-------------|
+| `recipe_search` | Search recipes across all your configured sources at once |
+| `recipe_get` | Get full recipe by ID or URL (auto-detects source) |
+| `recipe_random` | Random recipe for inspiration |
+| `recipe_sources` | See which sources are configured and ready |
+| `recipe_box` | Browse your saved recipes (NYT Cooking, requires Plus+) |
+| `recipe_collections` | Browse recipe collections (NYT Cooking, requires Plus+) |
+| `recipe_configure` | Set API keys and auth tokens for sources |
+| `recipe_license` | Activate a license or check current tier |
+| `list_diets` | See all 12 available dietary profiles |
+
+### Pro Tools (require Pro license)
+
+| Tool | What it does |
+|------|-------------|
+| `recipe_adapt` | Adapt a recipe for dietary needs with smart substitutions |
+| `recipe_analyze_diet` | Check a recipe against ALL 12 diets at once |
+| `recipe_scale` | Scale ingredients up/down + unit conversion |
+| `ingredient_search` | Find recipes from ingredients you have ("what's in my fridge?") |
+| `cooking_timeline` | Step-by-step timing breakdown with active vs passive time |
+| `meal_plan` | Generate weekly meal plans with dietary preferences |
+| `grocery_list` | Categorized grocery list from recipes or a meal plan |
 
 ---
 
@@ -239,7 +301,7 @@ recipe-mcp random --source thecocktaildb
 # See your sources
 recipe-mcp sources
 
-# NYT Cooking (requires subscription)
+# NYT Cooking (requires Plus+ and NYT subscription)
 recipe-mcp box
 recipe-mcp collections
 
@@ -248,30 +310,10 @@ recipe-mcp configure spoonacular
 recipe-mcp configure edamam
 recipe-mcp configure tasty
 recipe-mcp configure nyt
-```
 
----
-
-## Add More Sources (Optional)
-
-All of these have free tiers:
-
-```bash
-# Spoonacular — 1M+ recipes, 150 free requests/day
-# Sign up: https://spoonacular.com/food-api
-recipe-mcp configure spoonacular
-
-# Edamam — 2M+ recipes with nutrition data
-# Sign up: https://developer.edamam.com
-recipe-mcp configure edamam
-
-# Tasty (Buzzfeed) — popular trendy recipes
-# Sign up: https://rapidapi.com/apidojo/api/tasty
-recipe-mcp configure tasty
-
-# NYT Cooking — requires NYT subscription
-# Get your cookie from browser DevTools
-recipe-mcp configure nyt
+# License management
+recipe-mcp license status
+recipe-mcp license activate RMCP-XXXX-XXXX-XXXX
 ```
 
 ---

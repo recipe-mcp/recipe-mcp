@@ -130,20 +130,30 @@ export async function activateLicense(key) {
     });
     const data = await res.json();
 
-    if (data.valid === false) {
+    if (data.valid === true) {
+      // Determine tier from the product name or key prefix
+      const productName = (data.meta?.product_name || '').toLowerCase();
+      if (productName.includes('plus')) {
+        tier = 'plus';
+      } else if (productName.includes('pro')) {
+        tier = 'pro';
+      } else if (trimmed.startsWith('RMCP-PLUS')) {
+        tier = 'plus';
+      } else if (trimmed.startsWith('RMCP-PRO')) {
+        tier = 'pro';
+      }
+    } else if (data.error === 'license_key not found.') {
+      // Key not in LemonSqueezy yet (test mode or store not active)
+      // Fall through to prefix-based detection below
+      if (trimmed.startsWith('RMCP-PLUS')) {
+        tier = 'plus';
+      } else if (trimmed.startsWith('RMCP-PRO')) {
+        tier = 'pro';
+      } else {
+        return { success: false, message: 'Invalid or expired license key.' };
+      }
+    } else {
       return { success: false, message: data.error || 'Invalid or expired license key.' };
-    }
-
-    // Determine tier from the product name or key prefix
-    const productName = (data.meta?.product_name || '').toLowerCase();
-    if (productName.includes('plus')) {
-      tier = 'plus';
-    } else if (productName.includes('pro')) {
-      tier = 'pro';
-    } else if (trimmed.startsWith('RMCP-PLUS')) {
-      tier = 'plus';
-    } else if (trimmed.startsWith('RMCP-PRO')) {
-      tier = 'pro';
     }
   } catch (_err) {
     // Offline fallback: determine tier from key prefix
