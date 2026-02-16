@@ -17,7 +17,7 @@
 import { configGet, configSet } from './config.js';
 
 // Sources that work without any API key
-const FREE_SOURCES = ['themealdb', 'thecocktaildb', 'dummyjson', 'recipepuppy', 'webrecipe'];
+const FREE_SOURCES = ['themealdb', 'thecocktaildb', 'dummyjson', 'recipepuppy', 'webrecipe', 'blogs'];
 
 const TIERS = {
   free: {
@@ -34,7 +34,7 @@ const TIERS = {
     allowedSources: null,         // all sources
     premiumFeatures: false,
     searchLimit: Infinity,
-    description: 'All 9 recipe sources including NYT Cooking, Spoonacular, Edamam, Tasty + save favorites across all sources',
+    description: 'All recipe sources + favorites with notes & tags, cook history tracking, blog search across 25+ popular food blogs',
   },
   pro: {
     name: 'Pro',
@@ -42,7 +42,7 @@ const TIERS = {
     allowedSources: null,         // all sources
     premiumFeatures: true,
     searchLimit: Infinity,
-    description: 'Everything in Plus + dietary adaptation, recipe scaling, meal planning, grocery lists, cooking timelines, ingredient search',
+    description: 'Everything in Plus + cook mode, smart substitutions, pantry tracking, Instagram recipes, seasonal suggestions, nutrition comparison, recipe export (Notion/Google Docs), meal planning, grocery lists, dietary adaptation, recipe scaling, ingredient search',
   },
 };
 

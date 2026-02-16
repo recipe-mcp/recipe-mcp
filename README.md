@@ -2,7 +2,7 @@
 
 **Give your AI assistant the power to find, adapt, and plan recipes.**
 
-Search 9 recipe sources at once. Adapt any recipe to your diet (dairy-free, kosher, vegan, keto...) with smart substitutions. Scale ingredients, plan meals, build grocery lists. All through a single tool that works with Claude, ChatGPT, Cursor, and any MCP-compatible AI.
+Search 12 recipe sources at once — including 25+ popular food blogs and Instagram. Adapt any recipe to your diet (dairy-free, kosher, vegan, keto...) with smart substitutions. Scale ingredients, plan meals, build grocery lists, track your pantry, and cook step-by-step. All through a single tool that works with Claude, ChatGPT, Cursor, and any MCP-compatible AI.
 
 Zero dependencies. Works out of the box in under 2 minutes.
 
@@ -12,16 +12,20 @@ Zero dependencies. Works out of the box in under 2 minutes.
 
 recipe-mcp is a plugin for AI assistants. Once you install it, you can talk to Claude (or any AI that supports MCP) and say things like:
 
-- *"Find me a quick weeknight pasta recipe"*
+- *"Find me a quick weeknight pasta recipe"* — searches 25+ popular food blogs plus recipe databases
 - *"I have chicken, rice, and garlic — what can I make?"*
 - *"Make this recipe dairy-free"* (it suggests oat milk for milk, vegan cheese for cheese, etc.)
 - *"This recipe serves 4 but I need it for 12"*
 - *"Plan my meals for the week — I'm vegetarian"*
 - *"Make me a grocery list from those recipes"*
 - *"I'm kosher — adapt this recipe"* (separates meat and dairy, replaces pork)
-- *"How long will this take to cook? Break it down step by step"*
+- *"How long will this take to cook? Walk me through it step by step"*
+- *"What's in season right now? Suggest something fresh"*
+- *"Get the recipe from this Instagram post"* — extracts recipes from Instagram captions
+- *"What can I substitute for heavy cream?"* — smart substitution suggestions
+- *"Export this recipe to Notion"*
 
-Your AI searches across 9 recipe databases, finds what you need, and can modify any recipe to fit your dietary needs — instead of just rejecting recipes that don't match.
+Your AI searches across 12 sources including 25+ high-traffic food blogs, finds what you need, and can modify any recipe to fit your dietary needs — instead of just rejecting recipes that don't match.
 
 ---
 
@@ -90,10 +94,10 @@ Just ask your AI assistant about recipes. It will automatically use the recipe t
 
 ### Free — $0 (no account needed)
 
-- Search recipes from 5 free databases (TheMealDB, TheCocktailDB, DummyJSON, RecipePuppy)
-- Get full recipe details
-- Random recipe inspiration
-- Extract recipes from **any blog URL** (the secret weapon)
+- Search recipes from 6 free sources (TheMealDB, TheCocktailDB, DummyJSON, RecipePuppy, Blog Search, Web Recipe)
+- **Blog search** — searches 25+ high-traffic food blogs (Half Baked Harvest, Pinch of Yum, Skinnytaste, Budget Bytes, Smitten Kitchen, and more)
+- **Extract recipes from any blog URL** — the secret weapon
+- Get full recipe details, random inspiration
 - List dietary profiles
 - **No setup required** — works immediately after install
 
@@ -101,9 +105,10 @@ Just ask your AI assistant about recipes. It will automatically use the recipe t
 
 Everything in Free, plus:
 
-- **All 9 recipe sources** unlocked (NYT Cooking, Spoonacular, Edamam, Tasty)
+- **All 12 recipe sources** unlocked (NYT Cooking, Spoonacular, Edamam, Tasty, Instagram)
 - **1M+ recipes** from premium databases
-- **Save favorites** across all sources — build your personal recipe collection locally
+- **Save favorites** with notes and tags — build your personal recipe collection locally
+- **Cook history** — track what you've cooked, when, and your personal ratings
 - Unlimited searches (Free tier: 50/day)
 - **Requires setup** — each additional source needs a free API key (see [Source Setup Guide](#source-setup-guide) below)
 
@@ -111,15 +116,22 @@ Everything in Free, plus:
 
 Everything in Plus, plus:
 
+- **Instagram recipes** — paste an Instagram post URL and get a structured, cookable recipe
+- **Cook mode** — step-by-step recipe walker (next step, previous step, jump to step, progress bar)
+- **Smart substitutions** — "What can I substitute for heavy cream?" with ratios and cooking notes
 - **Smart dietary adaptation** — doesn't just filter out recipes, it suggests substitutions (dairy-free? It swaps milk for oat milk, cheese for nutritional yeast)
 - **12 diet profiles** — vegetarian, vegan, gluten-free, dairy-free, nut-free, pescatarian, keto, low-carb, paleo, shellfish-free, kosher, halal
 - **Kosher intelligence** — detects meat+dairy mixing, suggests pareve alternatives, replaces pork
-- **Recipe scaling** — double, halve, or scale by any amount
-- **Unit conversion** — cups to ml, oz to grams, °F to °C and back
+- **Recipe scaling** — double, halve, or scale by any amount + unit conversion (cups↔ml, oz↔g, °F↔°C)
+- **Pantry tracking** — add ingredients you have, auto-categorized by aisle
 - **"What's in my fridge?"** — tell it your ingredients, get recipe matches
+- **Seasonal suggestions** — what's in season right now + recipe ideas
+- **Nutrition comparison** — compare two recipes side by side
 - **Cooking timelines** — step-by-step timing breakdown with active vs passive time
 - **Meal planning** — auto-generate weekly plans with dietary preferences
 - **Grocery lists** — categorized by store aisle, deduplicated
+- **Recipe export** — formatted for Notion, Google Docs, or plain markdown
+- **Recipe sharing** — formatted for Slack, Discord, or text message
 - **No extra setup** — Pro features work on any recipe from any source. Just set up your sources and go.
 
 ### Activate your license
@@ -141,23 +153,26 @@ To check your current tier: ask Claude *"What's my recipe-mcp license status?"* 
 
 ## Source Setup Guide
 
-recipe-mcp connects to 9 recipe sources. The free ones work instantly. The others need a free API key or your own subscription — here's exactly how to set up each one.
+recipe-mcp connects to 12 recipe sources. The free ones work instantly. The others need a free API key or your own subscription — here's exactly how to set up each one.
 
 You can configure sources either **through Claude** (just ask in the chat) or **via the CLI**.
 
 ### Free sources (work instantly, no setup)
 
-These 5 sources are ready to go the moment you install recipe-mcp:
+These 6 sources are ready to go the moment you install recipe-mcp:
 
 | Source | What's in it | Size |
 |--------|-------------|------|
+| **Blog Search** | Searches 25+ popular food blogs (WordPress REST API) | Thousands of recipes |
+| **Web Recipe** | Extracts recipes from any blog URL (JSON-LD) | Unlimited |
 | **TheMealDB** | International meals | 280+ recipes |
 | **TheCocktailDB** | Cocktails and drinks | 500+ recipes |
 | **DummyJSON** | Sample recipes (great for testing) | 50 recipes |
 | **RecipePuppy** | Huge recipe index | 1M+ recipes |
-| **Web Recipe** | Extracts recipes from any blog URL | Unlimited |
 
 No keys, no accounts, no config. They just work.
+
+**Blogs searched:** Skinnytaste, Pinch of Yum, Half Baked Harvest, Sally's Baking Addiction, Damn Delicious, Spend with Pennies, RecipeTin Eats, Natasha's Kitchen, Budget Bytes, Cafe Delites, Gimme Some Oven, Minimalist Baker, Cookie and Kate, Love and Lemons, Two Peas and Their Pod, Well Plated, Smitten Kitchen, Downshiftology, The Pioneer Woman, Ambitious Kitchen, Oh She Glows, Dinner at the Zoo, The Recipe Critic, Cooking Classy, and more. Plus JSON-LD extraction from Delish, Taste of Home, Simply Recipes, Serious Eats, Bon Appetit, Food Network, Epicurious, and King Arthur Baking.
 
 ### Spoonacular — 1M+ recipes, 150 free requests/day
 
@@ -210,13 +225,23 @@ No keys, no accounts, no config. They just work.
 
 **Note:** Your NYT-S cookie may expire periodically (typically every few weeks). If you get authentication errors, grab a fresh cookie from your browser using the same steps above.
 
-### The Web Recipe Adapter (the secret weapon)
+### The Blog Search + Web Recipe Adapters (the secret weapon)
 
 **Tier required:** Free (works on all tiers)
 
-No setup needed. Just paste **any recipe URL** from any food blog, and recipe-mcp extracts the full structured recipe automatically. Works with thousands of sites including AllRecipes, Serious Eats, Simply Recipes, Bon Appetit, Epicurious, Food Network, King Arthur Baking, Budget Bytes, Smitten Kitchen, Cookie and Kate, Half Baked Harvest, Minimalist Baker, and more.
+No setup needed. **Blog Search** automatically searches 25+ of the highest-traffic food blogs on the internet using their WordPress REST APIs. Just search normally and results from Skinnytaste, Pinch of Yum, Half Baked Harvest, Budget Bytes, and 20+ more blogs show up alongside your other sources.
+
+The **Web Recipe** adapter lets you paste **any recipe URL** from any food blog, and recipe-mcp extracts the full structured recipe automatically. Works with thousands of sites including AllRecipes, Serious Eats, Simply Recipes, Bon Appetit, Epicurious, Food Network, King Arthur Baking, and more.
 
 Example: *"Get the recipe from https://www.budgetbytes.com/slow-cooker-chili/"*
+
+### Instagram Recipes (Pro)
+
+**Tier required:** Pro
+
+Paste any Instagram post URL that contains a recipe, and recipe-mcp extracts a structured, cookable recipe from the caption — ingredients list, step-by-step instructions, and metadata. No more trying to read tiny captions or watch 10-minute videos for a recipe.
+
+Example: *"Get the recipe from https://www.instagram.com/p/ABC123/"*
 
 ### Check your sources
 
@@ -226,13 +251,13 @@ To see which sources are configured and ready:
 
 ---
 
-## All 19 MCP Tools
+## All 32 MCP Tools
 
-### Free Tools (available on all tiers)
+### Free Tools (8 tools — available on all tiers)
 
 | Tool | What it does |
 |------|-------------|
-| `recipe_search` | Search recipes across all your configured sources at once |
+| `recipe_search` | Search recipes across all configured sources + 25 popular food blogs |
 | `recipe_get` | Get full recipe by ID or URL (auto-detects source) |
 | `recipe_random` | Random recipe for inspiration |
 | `recipe_sources` | See which sources are configured and ready |
@@ -241,25 +266,39 @@ To see which sources are configured and ready:
 | `recipe_license` | Activate a license or check current tier |
 | `list_diets` | See all 12 available dietary profiles |
 
-### Plus Tools (require Plus or Pro license)
+### Plus Tools (7 tools — require Plus or Pro license)
 
 | Tool | What it does |
 |------|-------------|
 | `recipe_save` | Save any recipe to your local favorites (works across all sources) |
-| `recipe_favorites` | List your saved favorite recipes |
+| `recipe_favorites` | List your saved favorite recipes (filter by tag) |
 | `recipe_unsave` | Remove a recipe from favorites by ID or list number |
+| `recipe_note` | Add a personal note to a saved recipe |
+| `recipe_tag` | Add or remove tags on saved recipes |
+| `recipe_log` | Log that you cooked a recipe (with optional rating and notes) |
+| `recipe_history` | View your cooking history — recent, most cooked, or by date |
 
-### Pro Tools (require Pro license)
+### Pro Tools (17 tools — require Pro license)
 
 | Tool | What it does |
 |------|-------------|
 | `recipe_adapt` | Adapt a recipe for dietary needs with smart substitutions |
 | `recipe_analyze_diet` | Check a recipe against ALL 12 diets at once |
 | `recipe_scale` | Scale ingredients up/down + unit conversion |
+| `recipe_substitute` | Get smart substitutions for any ingredient (with ratios and notes) |
+| `recipe_cook` | Cook mode — step-by-step recipe walker (start/next/prev/goto/done) |
+| `recipe_instagram` | Extract a structured recipe from an Instagram post URL |
+| `recipe_seasonal` | What's in season right now + recipe search suggestions |
+| `recipe_export` | Export a recipe formatted for Notion, Google Docs, or markdown |
+| `recipe_share` | Format a recipe for Slack, Discord, or text message |
+| `recipe_compare` | Compare nutrition of two recipes side by side |
 | `ingredient_search` | Find recipes from ingredients you have ("what's in my fridge?") |
 | `cooking_timeline` | Step-by-step timing breakdown with active vs passive time |
 | `meal_plan` | Generate weekly meal plans with dietary preferences |
 | `grocery_list` | Categorized grocery list from recipes or a meal plan |
+| `pantry_add` | Add ingredients to your pantry (auto-categorized by aisle) |
+| `pantry_remove` | Remove ingredients from your pantry |
+| `pantry_list` | View your pantry inventory, organized by category |
 
 ---
 
@@ -388,11 +427,11 @@ registerAdapter(new MyAdapter());
 
 ```
 src/
-  core/           # Adapter interface, registry, config, license, types
-  adapters/       # 9 source adapters (each ~50-100 lines)
-  mcp/            # MCP server (JSON-RPC 2.0 over stdio)
+  core/           # Adapter interface, registry, config, license, favorites, history, pantry, types
+  adapters/       # 12 source adapters (TheMealDB, NYT, Spoonacular, blogs, Instagram, etc.)
+  mcp/            # MCP server (JSON-RPC 2.0 over stdio) — 33 tools
   cli/            # Command-line interface
-  premium/        # Dietary adaptation, scaling, meal planning, timelines
+  premium/        # Dietary adaptation, scaling, cook mode, substitutions, export, sharing, seasonal, nutrition
 ```
 
 **Zero dependencies.** Only Node.js built-ins. Fast installs, no supply chain risk.

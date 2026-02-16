@@ -95,6 +95,10 @@ export async function getRecipeFrom(idOrUrl, source) {
     const tasty = getAdapter('tasty');
     if (tasty?.isReady()) return tasty.getRecipe(idOrUrl);
   }
+  if (idOrUrl.includes('instagram.com')) {
+    const ig = getAdapter('instagram');
+    if (ig) return ig.getRecipe(idOrUrl);
+  }
 
   // If it's a full URL to any website, try the web (JSON-LD) adapter
   if (idOrUrl.startsWith('http')) {

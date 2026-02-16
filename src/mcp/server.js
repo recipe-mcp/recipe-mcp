@@ -23,9 +23,17 @@ import { checkDiet, adaptRecipe, filterByDiet, analyzeDietary, getAvailableDiets
 import { scaleRecipe, convertUnits, formatScaledRecipe } from '../premium/recipe-scaler.js';
 import { searchByIngredients, formatIngredientSearch } from '../premium/ingredient-search.js';
 import { createTimeline, getStep, formatTimeline } from '../premium/cooking-timer.js';
+import { findSubstitutions, findRecipeSubstitutions, formatSubstitutions } from '../premium/smart-subs.js';
+import { startCookMode, getCookSession, getCurrentStep, nextStep, prevStep, goToStep, endCookMode, formatCookStep, formatCookStart } from '../premium/cook-mode.js';
+import { getSeasonalProduce, getSeasonalSearchTerms, formatSeasonal } from '../premium/seasonal.js';
+import { exportRecipe, exportGroceryList as exportGroceryMd, exportMealPlan as exportMealMd } from '../premium/export.js';
+import { compareNutrition, formatNutritionComparison } from '../premium/nutrition-compare.js';
+import { formatShareCard } from '../premium/share.js';
 
-// Favorites system
-import { getFavorites, saveFavorite, removeFavorite, formatFavorites } from '../core/favorites.js';
+// Favorites & history system
+import { getFavorites, saveFavorite, removeFavorite, addNote, addTags, removeTags, searchByTag, getAllTags, formatFavorites } from '../core/favorites.js';
+import { getHistory, logCooked, getRecent, getMostCooked, formatHistory } from '../core/history.js';
+import { getPantry, addToPantry, removeFromPantry, clearPantry, getPantryIngredients, formatPantry } from '../core/pantry.js';
 
 // License system
 import { getCurrentTier, getCurrentTierConfig, isSourceAllowed, hasPremiumFeatures, hasAllSources, activateLicense, getLicenseStatus, getAllTiers } from '../core/license.js';
@@ -40,7 +48,7 @@ import {
 } from '../core/registry.js';
 import { Capabilities } from '../core/types.js';
 
-// ── License gate helper ─────────────────────────────────────────────
+// ── License gate helpers ────────────────────────────────────────────
 
 function requirePlus(featureName) {
   if (!hasAllSources()) {
@@ -48,8 +56,9 @@ function requirePlus(featureName) {
       `"${featureName}" requires Plus or Pro. ` +
       `You're on the Free tier.\n\n` +
       `Upgrade to Plus ($8/year) to unlock:\n` +
-      `- All 9 recipe sources\n` +
-      `- Save favorites across all sources\n\n` +
+      `- All recipe sources + blog search\n` +
+      `- Favorites with notes & tags\n` +
+      `- Cook history tracking\n\n` +
       `Or Pro ($19/year) for everything in Plus + premium features.`
     );
   }
@@ -61,13 +70,17 @@ function requirePro(featureName) {
     throw new Error(
       `"${featureName}" is a Pro feature. ` +
       `You're on the ${tier === 'plus' ? 'Plus' : 'Free'} tier.\n\n` +
-      `Upgrade to Pro ($19/year) with the "recipe_license" tool to unlock:\n` +
+      `Upgrade to Pro ($19/year) to unlock:\n` +
       `- Smart dietary adaptation with substitutions\n` +
       `- Recipe scaling & unit conversion\n` +
-      `- Ingredient-based search ("what's in my fridge?")\n` +
-      `- Cooking timelines\n` +
-      `- Meal planning\n` +
-      `- Grocery lists`
+      `- Cook mode (step-by-step)\n` +
+      `- Smart ingredient substitutions\n` +
+      `- Pantry tracking\n` +
+      `- Seasonal produce suggestions\n` +
+      `- Instagram recipe extraction\n` +
+      `- Nutrition comparison\n` +
+      `- Recipe export (Notion, Google Docs, etc.)\n` +
+      `- Meal planning & grocery lists`
     );
   }
 }
@@ -88,7 +101,7 @@ const TOOLS = [
         query: { type: 'string', description: 'Search query (e.g., "chicken tikka", "quick pasta")' },
         source: {
           type: 'string',
-          description: 'Optional: limit search to a specific source (e.g., "nyt", "themealdb", "spoonacular")',
+          description: 'Optional: limit search to a specific source (e.g., "nyt", "themealdb", "spoonacular", "blogs")',
         },
         page: { type: 'number', description: 'Page number for pagination (default: 1)', default: 1 },
         diets: {
@@ -105,13 +118,14 @@ const TOOLS = [
     description:
       'Get full recipe details by ID or URL. Returns title, author, description, ingredients, ' +
       'step-by-step instructions, cook/prep time, nutrition, rating, and tags. ' +
-      'Automatically detects the source from the URL, or specify source explicitly.',
+      'Works with ANY recipe URL from ANY website (AllRecipes, Bon Appetit, food blogs, etc.) — ' +
+      'just paste the URL. Also accepts source-specific IDs.',
     inputSchema: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: 'Recipe ID or full URL (e.g., "52772" for TheMealDB, or a full NYT Cooking URL)',
+          description: 'Recipe ID or full URL (any recipe website URL, or source-specific ID like "52772" for TheMealDB)',
         },
         source: {
           type: 'string',
@@ -154,6 +168,48 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'recipe_configure',
+    description:
+      'Configure a recipe source. Use this to set API keys or authentication tokens. ' +
+      'For NYT Cooking: set your NYT-S browser cookie. ' +
+      'For Spoonacular: set your free API key from spoonacular.com/food-api.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: { type: 'string', description: 'Source adapter key (e.g., "nyt", "spoonacular")' },
+        credential: { type: 'string', description: 'API key or auth token for the source' },
+      },
+      required: ['source', 'credential'],
+    },
+  },
+  {
+    name: 'recipe_license',
+    description:
+      'Activate a Pro license key or check current license status. ' +
+      'Pro unlocks: all recipe sources, dietary adaptation, recipe scaling, ' +
+      'cook mode, pantry tracking, Instagram recipes, and more.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: {
+          type: 'string',
+          description: 'License key to activate (format: RMCP-XXXX-XXXX-XXXX). Omit to check current status.',
+        },
+      },
+    },
+  },
+  {
+    name: 'list_diets',
+    description:
+      'List all available dietary profiles and what they filter/adapt for. ' +
+      'Includes: vegetarian, vegan, gluten-free, dairy-free, nut-free, pescatarian, ' +
+      'keto, low-carb, paleo, shellfish-free, kosher, halal.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 
   // ── Plus tier tools ─────────────────────────────────────────────
   {
@@ -175,11 +231,12 @@ const TOOLS = [
   {
     name: 'recipe_favorites',
     description:
-      '🔒 Plus — List your saved favorite recipes across all sources.',
+      '🔒 Plus — List your saved favorite recipes across all sources. Filter by tag.',
     inputSchema: {
       type: 'object',
       properties: {
         page: { type: 'number', description: 'Page number (default: 1)', default: 1 },
+        tag: { type: 'string', description: 'Optional: filter by tag (e.g., "weeknight", "meal-prep")' },
       },
     },
   },
@@ -197,33 +254,71 @@ const TOOLS = [
     },
   },
   {
-    name: 'recipe_configure',
+    name: 'recipe_note',
     description:
-      'Configure a recipe source. Use this to set API keys or authentication tokens. ' +
-      'For NYT Cooking: set your NYT-S browser cookie. ' +
-      'For Spoonacular: set your free API key from spoonacular.com/food-api.',
+      '🔒 Plus — Add a personal note to a saved favorite. ' +
+      '"Doubled the garlic, kids loved it" or "needs more salt next time."',
     inputSchema: {
       type: 'object',
       properties: {
-        source: { type: 'string', description: 'Source adapter key (e.g., "nyt", "spoonacular")' },
-        credential: { type: 'string', description: 'API key or auth token for the source' },
+        index: { type: 'number', description: 'Favorite number (from recipe_favorites list)' },
+        id: { type: 'string', description: 'Or: recipe ID' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        note: { type: 'string', description: 'Your personal note about this recipe' },
       },
-      required: ['source', 'credential'],
+      required: ['note'],
     },
   },
   {
-    name: 'recipe_license',
+    name: 'recipe_tag',
     description:
-      'Activate a Pro license key or check current license status. ' +
-      'Pro unlocks: all recipe sources, dietary adaptation, recipe scaling, ' +
-      'ingredient search, cooking timelines, meal planning, and grocery lists.',
+      '🔒 Plus — Add custom tags to a saved favorite. ' +
+      'Tags like "weeknight", "meal-prep", "date-night", "kid-friendly".',
     inputSchema: {
       type: 'object',
       properties: {
-        key: {
-          type: 'string',
-          description: 'License key to activate (format: RMCP-XXXX-XXXX-XXXX). Omit to check current status.',
+        index: { type: 'number', description: 'Favorite number (from recipe_favorites list)' },
+        id: { type: 'string', description: 'Or: recipe ID' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tags to add (e.g., ["weeknight", "quick", "comfort-food"])',
         },
+      },
+      required: ['tags'],
+    },
+  },
+  {
+    name: 'recipe_log',
+    description:
+      '🔒 Plus — Log a recipe as cooked. Track what you make and when. ' +
+      'Optionally rate it 1-5 and add notes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Recipe ID or URL that you cooked' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        rating: { type: 'number', description: 'Optional: personal rating 1-5' },
+        notes: { type: 'string', description: 'Optional: notes about how it went' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'recipe_history',
+    description:
+      '🔒 Plus — View your cook history. See what you cooked recently, ' +
+      'your most-made recipes, or search by date.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        view: {
+          type: 'string',
+          enum: ['recent', 'most_cooked'],
+          description: 'View type: "recent" (default) or "most_cooked"',
+        },
+        limit: { type: 'number', description: 'Number of entries to show (default: 10)', default: 10 },
       },
     },
   },
@@ -234,9 +329,7 @@ const TOOLS = [
     description:
       '🔒 Pro — Adapt a recipe for dietary restrictions. Instead of rejecting recipes, ' +
       'this intelligently suggests substitutions. Supports: vegetarian, vegan, gluten-free, ' +
-      'dairy-free, nut-free, pescatarian, keto, low-carb, paleo, shellfish-free, kosher, halal. ' +
-      'For kosher: detects meat+dairy mixing and suggests pareve alternatives. ' +
-      'For dairy-free: suggests oat milk for milk, vegan cheese for cheese, etc.',
+      'dairy-free, nut-free, pescatarian, keto, low-carb, paleo, shellfish-free, kosher, halal.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -255,8 +348,7 @@ const TOOLS = [
     name: 'recipe_analyze_diet',
     description:
       '🔒 Pro — Analyze a recipe for compatibility with ALL dietary profiles at once. ' +
-      'Shows which diets it works for, which it can be adapted for (with specific substitutions), ' +
-      'and which would be difficult.',
+      'Shows which diets it works for, which it can be adapted for, and which would be difficult.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -290,8 +382,8 @@ const TOOLS = [
     name: 'ingredient_search',
     description:
       '🔒 Pro — "What can I cook with what\'s in my fridge?" ' +
-      'Give a list of ingredients you have and find recipes that use them, ' +
-      'ranked by how many ingredients match.',
+      'Give a list of ingredients you have and find recipes that use them. ' +
+      'Set from_pantry=true to search using your saved pantry items.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -300,17 +392,16 @@ const TOOLS = [
           items: { type: 'string' },
           description: 'List of ingredients you have (e.g., ["chicken", "rice", "garlic", "soy sauce"])',
         },
+        from_pantry: { type: 'boolean', description: 'If true, use ingredients from your pantry' },
         source: { type: 'string', description: 'Optional: limit to a specific source' },
       },
-      required: ['ingredients'],
     },
   },
   {
     name: 'cooking_timeline',
     description:
       '🔒 Pro — Create a cooking timeline from a recipe. Breaks down each step with timing, ' +
-      'categorizes actions (prep, cook, wait, mix, serve), calculates active vs passive time. ' +
-      'Great for planning when to start cooking for dinner.',
+      'categorizes actions (prep, cook, wait, mix, serve), calculates active vs passive time.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -324,8 +415,7 @@ const TOOLS = [
     name: 'meal_plan',
     description:
       '🔒 Pro — Generate a weekly meal plan based on preferences. ' +
-      'Searches across all configured recipe sources and creates a balanced plan. ' +
-      'Supports dietary preferences like vegetarian, vegan, low-carb, quick.',
+      'Searches across all configured recipe sources and creates a balanced plan.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -347,7 +437,7 @@ const TOOLS = [
     name: 'grocery_list',
     description:
       '🔒 Pro — Generate a categorized grocery list from recipes or a meal plan. ' +
-      'Deduplicates ingredients and groups by store aisle (Produce, Meat, Dairy, Pantry, etc.).',
+      'Deduplicates ingredients and groups by store aisle.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -371,14 +461,174 @@ const TOOLS = [
     },
   },
   {
-    name: 'list_diets',
+    name: 'recipe_substitute',
     description:
-      'List all available dietary profiles and what they filter/adapt for. ' +
-      'Includes: vegetarian, vegan, gluten-free, dairy-free, nut-free, pescatarian, ' +
-      'keto, low-carb, paleo, shellfish-free, kosher, halal.',
+      '🔒 Pro — Smart ingredient substitutions. "I don\'t have heavy cream" → ' +
+      'suggests alternatives with adjusted quantities and notes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ingredients: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Ingredients you need substitutes for (e.g., ["heavy cream", "eggs", "butter"])',
+        },
+      },
+      required: ['ingredients'],
+    },
+  },
+  {
+    name: 'recipe_cook',
+    description:
+      '🔒 Pro — Start cook mode: step-by-step recipe walker. ' +
+      'Navigate with "next step", "previous step", or jump to a step number. ' +
+      'Perfect for hands-free cooking with a voice assistant.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Recipe ID or URL to cook' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        action: {
+          type: 'string',
+          enum: ['start', 'next', 'prev', 'goto', 'status', 'done'],
+          description: 'Cook mode action (default: "start")',
+        },
+        step: { type: 'number', description: 'Step number (for "goto" action)' },
+      },
+    },
+  },
+  {
+    name: 'recipe_seasonal',
+    description:
+      '🔒 Pro — What\'s in season? Shows seasonal produce for the current month ' +
+      'and suggests recipes using those ingredients.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        month: { type: 'number', description: 'Month number 1-12 (default: current month)' },
+      },
+    },
+  },
+  {
+    name: 'pantry_add',
+    description:
+      '🔒 Pro — Add ingredients to your pantry. Track what you have on hand. ' +
+      'Use with ingredient_search to find recipes from your pantry.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Ingredients to add (e.g., ["chicken breast", "rice", "soy sauce", "garlic"])',
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'pantry_remove',
+    description:
+      '🔒 Pro — Remove ingredients from your pantry (used them up!).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Ingredients to remove',
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'pantry_list',
+    description:
+      '🔒 Pro — View your pantry, organized by category (Produce, Meat, Dairy, Pantry Staples, etc.).',
     inputSchema: {
       type: 'object',
       properties: {},
+    },
+  },
+  {
+    name: 'recipe_export',
+    description:
+      '🔒 Pro — Export a recipe, meal plan, or grocery list in a format ready for ' +
+      'Notion, Google Docs, Google Keep, Todoist, or plain markdown. ' +
+      'Formats data perfectly for other MCP servers to paste.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Recipe ID or URL to export' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        format: {
+          type: 'string',
+          enum: ['markdown', 'notion', 'checklist', 'keep', 'todoist'],
+          description: 'Export format (default: "markdown")',
+        },
+        type: {
+          type: 'string',
+          enum: ['recipe', 'grocery', 'mealplan'],
+          description: 'What to export (default: "recipe")',
+        },
+      },
+    },
+  },
+  {
+    name: 'recipe_share',
+    description:
+      '🔒 Pro — Format a recipe as a compact shareable card for Slack, Discord, text/SMS, or markdown.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Recipe ID or URL to share' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        format: {
+          type: 'string',
+          enum: ['text', 'slack', 'discord', 'markdown'],
+          description: 'Share format (default: "text")',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'recipe_compare',
+    description:
+      '🔒 Pro — Compare nutrition data of 2+ recipes side by side. ' +
+      'Shows a table with winners highlighted (lower calories, higher protein, etc.).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', description: 'Recipe ID or URL' },
+              source: { type: 'string', description: 'Optional: source adapter key' },
+            },
+            required: ['id'],
+          },
+          description: 'Recipes to compare (2 or more)',
+        },
+      },
+      required: ['recipes'],
+    },
+  },
+  {
+    name: 'recipe_instagram',
+    description:
+      '🔒 Pro — Extract a recipe from an Instagram post or reel. ' +
+      'Turns messy Instagram captions into structured, cookable recipes ' +
+      'with ingredients and step-by-step instructions. Works with public posts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'Instagram post or reel URL' },
+      },
+      required: ['url'],
     },
   },
 ];
@@ -436,18 +686,14 @@ function formatRecipeDetail(recipe) {
 
 async function handleTool(name, args) {
   switch (name) {
+    // ── Free tools ──────────────────────────────────────────────
     case 'recipe_search': {
       const data = await searchAll(args.query, { source: args.source, page: args.page || 1 });
       if (!data.recipes.length) return 'No recipes found. Try a different search term.';
 
-      // If dietary filters are provided and user has Pro, sort by compatibility
       let recipes = data.recipes;
-      if (args.diets?.length) {
-        if (hasPremiumFeatures()) {
-          // We need full recipe data for dietary checking, but for search results
-          // we can at least sort by title/kicker keyword matching
-          recipes = filterByDiet(recipes, args.diets);
-        }
+      if (args.diets?.length && hasPremiumFeatures()) {
+        recipes = filterByDiet(recipes, args.diets);
       }
 
       const summary = recipes.map(r => {
@@ -494,41 +740,8 @@ async function handleTool(name, args) {
         const caps = [...a.capabilities].join(', ');
         return `**${a.name}** (${a.key})\n  Status: ${status}\n  Capabilities: ${caps}`;
       });
-      lines.unshift(`Current tier: **${tier === 'pro' ? 'Pro' : 'Free'}**\n`);
+      lines.unshift(`Current tier: **${tier === 'pro' ? 'Pro' : tier === 'plus' ? 'Plus' : 'Free'}**\n`);
       return `Available recipe sources (${all.length}):\n\n${lines.join('\n\n')}`;
-    }
-
-    case 'recipe_save': {
-      requirePlus('Favorites');
-      // Fetch the recipe to get its details
-      const recipe = await getRecipeFrom(args.id, args.source);
-      const result = saveFavorite({
-        id: recipe.id || args.id,
-        source: recipe.source || args.source || 'unknown',
-        title: args.title || recipe.title,
-        url: args.url || recipe.url || `${args.id}`,
-      });
-      return result.message;
-    }
-
-    case 'recipe_favorites': {
-      requirePlus('Favorites');
-      const favorites = getFavorites();
-      return formatFavorites(favorites, args.page || 1);
-    }
-
-    case 'recipe_unsave': {
-      requirePlus('Favorites');
-      if (typeof args.index === 'number') {
-        // Convert from 1-based (user-facing) to 0-based (internal)
-        const result = removeFavorite({ index: args.index - 1 });
-        return result.message;
-      }
-      if (args.id) {
-        const result = removeFavorite({ id: args.id, source: args.source });
-        return result.message;
-      }
-      throw new Error('Provide either a recipe ID or an index number to remove.');
     }
 
     case 'recipe_collections': {
@@ -594,7 +807,96 @@ async function handleTool(name, args) {
       return lines.join('\n');
     }
 
-    // ── Pro tools ────────────────────────────────────────────────
+    case 'list_diets': {
+      const diets = getAvailableDiets();
+      const lines = ['# Available Dietary Profiles\n'];
+      for (const d of diets) {
+        lines.push(`**${d.name}** (\`${d.key}\`)`);
+        lines.push(`${d.description}\n`);
+      }
+      lines.push('Use these with `recipe_adapt` to adapt any recipe, or with `recipe_search` to filter results.');
+      return lines.join('\n');
+    }
+
+    // ── Plus tools ──────────────────────────────────────────────
+    case 'recipe_save': {
+      requirePlus('Favorites');
+      const recipe = await getRecipeFrom(args.id, args.source);
+      const result = saveFavorite({
+        id: recipe.id || args.id,
+        source: recipe.source || args.source || 'unknown',
+        title: args.title || recipe.title,
+        url: args.url || recipe.url || `${args.id}`,
+      });
+      return result.message;
+    }
+
+    case 'recipe_favorites': {
+      requirePlus('Favorites');
+      const favorites = getFavorites();
+      return formatFavorites(favorites, args.page || 1, args.tag || null);
+    }
+
+    case 'recipe_unsave': {
+      requirePlus('Favorites');
+      if (typeof args.index === 'number') {
+        const result = removeFavorite({ index: args.index - 1 });
+        return result.message;
+      }
+      if (args.id) {
+        const result = removeFavorite({ id: args.id, source: args.source });
+        return result.message;
+      }
+      throw new Error('Provide either a recipe ID or an index number to remove.');
+    }
+
+    case 'recipe_note': {
+      requirePlus('Notes');
+      const noteOpts = { note: args.note };
+      if (typeof args.index === 'number') noteOpts.index = args.index - 1;
+      else if (args.id) { noteOpts.id = args.id; noteOpts.source = args.source; }
+      else throw new Error('Provide a favorite number or recipe ID.');
+      const result = addNote(noteOpts);
+      return result.message;
+    }
+
+    case 'recipe_tag': {
+      requirePlus('Tags');
+      const tagOpts = { tags: args.tags };
+      if (typeof args.index === 'number') tagOpts.index = args.index - 1;
+      else if (args.id) { tagOpts.id = args.id; tagOpts.source = args.source; }
+      else throw new Error('Provide a favorite number or recipe ID.');
+      const result = addTags(tagOpts);
+      return result.message;
+    }
+
+    case 'recipe_log': {
+      requirePlus('Cook History');
+      const recipe = await getRecipeFrom(args.id, args.source);
+      const result = logCooked({
+        id: recipe.id || args.id,
+        source: recipe.source || args.source || 'unknown',
+        title: recipe.title,
+        url: recipe.url,
+        rating: args.rating,
+        notes: args.notes,
+      });
+      return result.message;
+    }
+
+    case 'recipe_history': {
+      requirePlus('Cook History');
+      const view = args.view || 'recent';
+      const limit = args.limit || 10;
+      if (view === 'most_cooked') {
+        const most = getMostCooked(limit);
+        return formatHistory(most, 'Most Cooked Recipes');
+      }
+      const recent = getRecent(limit);
+      return formatHistory(recent, 'Recently Cooked');
+    }
+
+    // ── Pro tools ───────────────────────────────────────────────
     case 'recipe_adapt': {
       requirePro('Dietary Adaptation');
       const recipe = await getRecipeFrom(args.id, args.source);
@@ -613,22 +915,22 @@ async function handleTool(name, args) {
       requirePro('Recipe Scaling');
       const recipe = await getRecipeFrom(args.id, args.source);
       let result = recipe;
-      if (args.scale) {
-        result = scaleRecipe(result, args.scale);
-      }
-      if (args.convert) {
-        result = convertUnits(result, args.convert);
-      }
-      if (!args.scale && !args.convert) {
-        // Default to doubling if no scale specified
-        result = scaleRecipe(result, 2);
-      }
+      if (args.scale) result = scaleRecipe(result, args.scale);
+      if (args.convert) result = convertUnits(result, args.convert);
+      if (!args.scale && !args.convert) result = scaleRecipe(result, 2);
       return formatScaledRecipe(result);
     }
 
     case 'ingredient_search': {
       requirePro('Ingredient Search');
-      const results = await searchByIngredients(args.ingredients, { source: args.source });
+      let ingredients = args.ingredients;
+      if (args.from_pantry) {
+        const pantryItems = getPantryIngredients();
+        if (!pantryItems.length) throw new Error('Your pantry is empty. Add items with `pantry_add` first.');
+        ingredients = pantryItems;
+      }
+      if (!ingredients?.length) throw new Error('Provide ingredients or set from_pantry=true.');
+      const results = await searchByIngredients(ingredients, { source: args.source });
       return formatIngredientSearch(results);
     }
 
@@ -661,18 +963,126 @@ async function handleTool(name, args) {
       } else {
         throw new Error('Provide either a list of recipes or set from_meal_plan=true after generating a meal plan.');
       }
+      lastGroceryList = list;
       return formatGroceryList(list);
     }
 
-    case 'list_diets': {
-      const diets = getAvailableDiets();
-      const lines = ['# Available Dietary Profiles\n'];
-      for (const d of diets) {
-        lines.push(`**${d.name}** (\`${d.key}\`)`);
-        lines.push(`${d.description}\n`);
+    case 'recipe_substitute': {
+      requirePro('Smart Substitutions');
+      const results = args.ingredients.map(ing => findSubstitutions(ing));
+      return formatSubstitutions(results);
+    }
+
+    case 'recipe_cook': {
+      requirePro('Cook Mode');
+      const action = args.action || 'start';
+
+      if (action === 'start') {
+        if (!args.id) throw new Error('Provide a recipe ID or URL to start cooking.');
+        const recipe = await getRecipeFrom(args.id, args.source);
+        const session = startCookMode(recipe);
+        return formatCookStart(session);
       }
-      lines.push('Use these with `recipe_adapt` to adapt any recipe, or with `recipe_search` to filter results.');
-      return lines.join('\n');
+      if (action === 'next') {
+        const step = nextStep();
+        return formatCookStep(step, getCookSession());
+      }
+      if (action === 'prev') {
+        const step = prevStep();
+        return formatCookStep(step, getCookSession());
+      }
+      if (action === 'goto') {
+        if (!args.step) throw new Error('Provide a step number to jump to.');
+        const step = goToStep(args.step);
+        return formatCookStep(step, getCookSession());
+      }
+      if (action === 'status') {
+        const step = getCurrentStep();
+        return formatCookStep(step, getCookSession());
+      }
+      if (action === 'done') {
+        const session = endCookMode();
+        if (!session) return 'No active cooking session.';
+        return `Done cooking "${session.title}"! 🎉\n\nTip: Use \`recipe_log\` to log this in your cook history.`;
+      }
+      throw new Error(`Unknown cook mode action: ${action}`);
+    }
+
+    case 'recipe_seasonal': {
+      requirePro('Seasonal Suggestions');
+      const seasonal = getSeasonalProduce(args.month);
+      // Search for a few seasonal recipes
+      const searchTerms = getSeasonalSearchTerms(args.month);
+      let recipes = [];
+      try {
+        const searchResults = await searchAll(searchTerms.slice(0, 2).join(' '), { page: 1 });
+        recipes = searchResults.recipes.slice(0, 5);
+      } catch { /* search is optional */ }
+      return formatSeasonal(seasonal, recipes);
+    }
+
+    case 'pantry_add': {
+      requirePro('Pantry');
+      const result = addToPantry(args.items);
+      return result.message;
+    }
+
+    case 'pantry_remove': {
+      requirePro('Pantry');
+      const result = removeFromPantry(args.items);
+      return result.message;
+    }
+
+    case 'pantry_list': {
+      requirePro('Pantry');
+      const pantry = getPantry();
+      return formatPantry(pantry);
+    }
+
+    case 'recipe_export': {
+      requirePro('Export');
+      const format = args.format || 'markdown';
+      const type = args.type || 'recipe';
+
+      if (type === 'grocery' && lastGroceryList) {
+        return exportGroceryMd(lastGroceryList);
+      }
+      if (type === 'mealplan' && lastMealPlan) {
+        return exportMealMd(lastMealPlan);
+      }
+      if (args.id) {
+        const recipe = await getRecipeFrom(args.id, args.source);
+        const exported = exportRecipe(recipe, format);
+        return `**Exported as ${exported.format}:**\n\n${exported.content}`;
+      }
+      throw new Error('Provide a recipe ID/URL, or export a grocery list/meal plan after generating one.');
+    }
+
+    case 'recipe_share': {
+      requirePro('Sharing');
+      const recipe = await getRecipeFrom(args.id, args.source);
+      const card = formatShareCard(recipe, args.format || 'text');
+      return `**Share Card (${args.format || 'text'}):**\n\n${card}`;
+    }
+
+    case 'recipe_compare': {
+      requirePro('Nutrition Comparison');
+      if (!args.recipes?.length || args.recipes.length < 2) {
+        throw new Error('Provide at least 2 recipes to compare.');
+      }
+      const recipes = await Promise.all(
+        args.recipes.map(r => getRecipeFrom(r.id, r.source))
+      );
+      const comparison = compareNutrition(recipes);
+      return formatNutritionComparison(comparison);
+    }
+
+    case 'recipe_instagram': {
+      requirePro('Instagram Recipes');
+      const adapter = getAdapter('instagram');
+      if (!adapter) throw new Error('Instagram adapter not available.');
+      const recipe = await adapter.getRecipe(args.url);
+      return formatRecipeDetail(recipe);
     }
 
     default:
@@ -683,6 +1093,7 @@ async function handleTool(name, args) {
 // Mutable state for cross-tool flows
 let lastMealPlan = null;
 let lastTimeline = null;
+let lastGroceryList = null;
 
 // ── MCP JSON-RPC protocol ────────────────────────────────────────────
 
@@ -701,7 +1112,7 @@ function handleMessage(msg) {
         result: {
           protocolVersion: '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'recipe-mcp', version: '1.0.0' },
+          serverInfo: { name: 'recipe-mcp', version: '1.1.0' },
         },
       });
       break;

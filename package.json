@@ -1,7 +1,7 @@
 {
   "name": "recipe-mcp",
-  "version": "1.0.2",
-  "description": "The universal recipe MCP server — search, fetch, and plan meals from multiple recipe sources",
+  "version": "1.1.0",
+  "description": "The universal recipe MCP server — 12 sources, 32 tools, 25+ food blogs, dietary adaptation, cook mode, pantry tracking, and more",
   "type": "module",
   "main": "src/index.js",
   "bin": {
@@ -21,6 +21,10 @@
     "nyt-cooking",
     "themealdb",
     "spoonacular",
+    "instagram-recipes",
+    "food-blogs",
+    "pantry",
+    "dietary",
     "model-context-protocol",
     "claude",
     "ai",
