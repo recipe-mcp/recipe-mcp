@@ -1,6 +1,6 @@
 {
   "name": "recipe-mcp",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "The universal recipe MCP server — 12 sources, 32 tools, 25+ food blogs, dietary adaptation, cook mode, pantry tracking, and more",
   "type": "module",
   "main": "src/index.js",
