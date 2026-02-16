@@ -120,8 +120,8 @@ export async function activateLicense(key) {
     return { success: false, message: 'Invalid key format. Expected: RMCP-XXXX-XXXX-XXXX' };
   }
 
-  // Validate against LemonSqueezy API
-  let tier = 'pro'; // default fallback
+  // Validate against LemonSqueezy API — only keys verified by LemonSqueezy are accepted
+  let tier = null;
   try {
     const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
       method: 'POST',
@@ -131,37 +131,25 @@ export async function activateLicense(key) {
     const data = await res.json();
 
     if (data.valid === true) {
-      // Determine tier from the product name or key prefix
+      // Determine tier from the product name
       const productName = (data.meta?.product_name || '').toLowerCase();
       if (productName.includes('plus')) {
         tier = 'plus';
       } else if (productName.includes('pro')) {
         tier = 'pro';
-      } else if (trimmed.startsWith('RMCP-PLUS')) {
-        tier = 'plus';
-      } else if (trimmed.startsWith('RMCP-PRO')) {
-        tier = 'pro';
-      }
-    } else if (data.error === 'license_key not found.') {
-      // Key not in LemonSqueezy yet (test mode or store not active)
-      // Fall through to prefix-based detection below
-      if (trimmed.startsWith('RMCP-PLUS')) {
-        tier = 'plus';
-      } else if (trimmed.startsWith('RMCP-PRO')) {
-        tier = 'pro';
       } else {
-        return { success: false, message: 'Invalid or expired license key.' };
+        // Default to pro if product name doesn't specify
+        tier = 'pro';
       }
     } else {
       return { success: false, message: data.error || 'Invalid or expired license key.' };
     }
   } catch (_err) {
-    // Offline fallback: determine tier from key prefix
-    if (trimmed.startsWith('RMCP-PLUS')) {
-      tier = 'plus';
-    } else if (trimmed.startsWith('RMCP-PRO')) {
-      tier = 'pro';
-    }
+    return { success: false, message: 'Could not validate license key. Check your internet connection and try again.' };
+  }
+
+  if (!tier) {
+    return { success: false, message: 'Invalid or expired license key.' };
   }
 
   const tierConfig = TIERS[tier];
