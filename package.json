@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "recipe-mcp": "./src/cli/index.js",
-    "recipe-mcp-server": "./src/mcp/server.js"
+    "recipe-mcp": "src/cli/index.js",
+    "recipe-mcp-server": "src/mcp/server.js"
   },
   "scripts": {
     "start": "node src/cli/index.js",

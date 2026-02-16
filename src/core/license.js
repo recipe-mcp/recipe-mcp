@@ -120,23 +120,38 @@ export async function activateLicense(key) {
     return { success: false, message: 'Invalid key format. Expected: RMCP-XXXX-XXXX-XXXX' };
   }
 
-  // TODO: In production, validate against LemonSqueezy/Gumroad API:
-  //
-  // const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ license_key: trimmed }),
-  // });
-  // const data = await res.json();
-  // if (!data.valid) return { success: false, message: data.error };
-  // const tier = data.meta.tier; // 'plus' or 'pro'
+  // Validate against LemonSqueezy API
+  let tier = 'pro'; // default fallback
+  try {
+    const res = await fetch('https://api.lemonsqueezy.com/v1/licenses/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ license_key: trimmed }),
+    });
+    const data = await res.json();
 
-  // Determine tier from key prefix (in production, this comes from the payment provider)
-  let tier = 'pro'; // default
-  if (trimmed.startsWith('RMCP-PLUS')) {
-    tier = 'plus';
-  } else if (trimmed.startsWith('RMCP-PRO')) {
-    tier = 'pro';
+    if (data.valid === false) {
+      return { success: false, message: data.error || 'Invalid or expired license key.' };
+    }
+
+    // Determine tier from the product name or key prefix
+    const productName = (data.meta?.product_name || '').toLowerCase();
+    if (productName.includes('plus')) {
+      tier = 'plus';
+    } else if (productName.includes('pro')) {
+      tier = 'pro';
+    } else if (trimmed.startsWith('RMCP-PLUS')) {
+      tier = 'plus';
+    } else if (trimmed.startsWith('RMCP-PRO')) {
+      tier = 'pro';
+    }
+  } catch (_err) {
+    // Offline fallback: determine tier from key prefix
+    if (trimmed.startsWith('RMCP-PLUS')) {
+      tier = 'plus';
+    } else if (trimmed.startsWith('RMCP-PRO')) {
+      tier = 'pro';
+    }
   }
 
   const tierConfig = TIERS[tier];

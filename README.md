@@ -96,7 +96,7 @@ Just ask your AI assistant about recipes. It will automatically use the recipe t
 - Extract recipes from **any blog URL** (the secret weapon)
 - List dietary profiles
 
-### Plus — $8/year
+### Plus — $8/year · [Buy Plus](https://recipe-mcp.lemonsqueezy.com/checkout/buy/3fe051d4-2f4a-44ed-98b7-a6d16903c4e6)
 
 Everything in Free, plus:
 
@@ -104,7 +104,7 @@ Everything in Free, plus:
 - **1M+ recipes** from premium databases
 - Unlimited searches (Free tier: 50/day)
 
-### Pro — $19/year
+### Pro — $19/year · [Buy Pro](https://recipe-mcp.lemonsqueezy.com/checkout/buy/773b1bb9-3c62-4a94-b0f0-a621eda524ca)
 
 Everything in Plus, plus:
 
