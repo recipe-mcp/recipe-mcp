@@ -30,7 +30,7 @@ const TIERS = {
   },
   plus: {
     name: 'Plus',
-    price: '$4/month',
+    price: '$8/year',
     allowedSources: null,         // all sources
     premiumFeatures: false,
     searchLimit: Infinity,
@@ -38,7 +38,7 @@ const TIERS = {
   },
   pro: {
     name: 'Pro',
-    price: '$9/month',
+    price: '$19/year',
     allowedSources: null,         // all sources
     premiumFeatures: true,
     searchLimit: Infinity,

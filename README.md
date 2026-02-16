@@ -96,7 +96,7 @@ Just ask your AI assistant about recipes. It will automatically use the recipe t
 - Extract recipes from **any blog URL** (the secret weapon)
 - List dietary profiles
 
-### Plus — $4/month
+### Plus — $8/year
 
 Everything in Free, plus:
 
@@ -104,7 +104,7 @@ Everything in Free, plus:
 - **1M+ recipes** from premium databases
 - Unlimited searches (Free tier: 50/day)
 
-### Pro — $9/month
+### Pro — $19/year
 
 Everything in Plus, plus:
 

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>recipe-mcp — Turn Your AI Into a Personal Chef</title>
+  <meta name="description" content="Give your AI assistant access to 9 recipe databases. Smart dietary adaptation, meal planning, grocery lists, and more. Works with Claude, Cursor, and any MCP client.">
+  <meta property="og:title" content="recipe-mcp — Turn Your AI Into a Personal Chef">
+  <meta property="og:description" content="16 tools for cooking with AI. Search 9 recipe sources, adapt recipes to your diet, plan meals, build grocery lists.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://recipe-mcp.github.io/recipe-mcp">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      color: #1a1a2e;
+      line-height: 1.6;
+      background: #fafaf8;
+    }
+
+    .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      background: linear-gradient(135deg, #fff8f0 0%, #f0faf0 100%);
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .hero h1 {
+      font-size: 2.8em;
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      color: #1a1a2e;
+    }
+    .hero h1 span { color: #e07040; }
+    .hero p.subtitle {
+      font-size: 1.25em;
+      color: #555;
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+    .hero-install {
+      background: #1a1a2e;
+      color: #a0f0a0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      padding: 16px 32px;
+      border-radius: 12px;
+      display: inline-block;
+      font-size: 1.1em;
+      margin-bottom: 16px;
+      letter-spacing: 0.02em;
+    }
+    .hero-note { color: #888; font-size: 0.9em; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.05em;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-primary { background: #e07040; color: white; }
+    .btn-secondary { background: #1a1a2e; color: white; margin-left: 12px; }
+    .btn-group { margin-top: 32px; }
+
+    /* What You Can Say */
+    .prompts {
+      padding: 60px 24px;
+      background: white;
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .prompts h2 { text-align: center; font-size: 1.8em; margin-bottom: 32px; }
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .prompt-card {
+      background: #f8f8f5;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #eee;
+    }
+    .prompt-card .q {
+      font-style: italic;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .prompt-card .a {
+      font-size: 0.9em;
+      color: #888;
+    }
+
+    /* Features */
+    .features {
+      padding: 60px 24px;
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .features h2 { text-align: center; font-size: 1.8em; margin-bottom: 12px; }
+    .features .subtitle { text-align: center; color: #888; margin-bottom: 40px; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      text-align: center;
+      padding: 24px 16px;
+    }
+    .feature-card .icon { font-size: 2em; margin-bottom: 12px; }
+    .feature-card h3 { font-size: 1.05em; margin-bottom: 8px; }
+    .feature-card p { font-size: 0.85em; color: #666; }
+
+    /* Dietary Section */
+    .dietary {
+      padding: 60px 24px;
+      background: #fff8f0;
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .dietary h2 { text-align: center; font-size: 1.8em; margin-bottom: 12px; }
+    .dietary .subtitle { text-align: center; color: #888; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .sub-table {
+      max-width: 500px;
+      margin: 0 auto 24px;
+      border-collapse: collapse;
+    }
+    .sub-table th { text-align: left; padding: 8px 16px; color: #888; font-weight: normal; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sub-table td { padding: 10px 16px; border-top: 1px solid #e8e0d8; }
+    .sub-table .from { color: #c44; text-decoration: line-through; }
+    .sub-table .to { color: #2a8; font-weight: 600; }
+    .diet-tags {
+      text-align: center;
+      margin-top: 24px;
+    }
+    .diet-tag {
+      display: inline-block;
+      padding: 6px 14px;
+      background: white;
+      border: 1px solid #e0d8d0;
+      border-radius: 20px;
+      margin: 4px;
+      font-size: 0.85em;
+      color: #555;
+    }
+
+    /* Pricing */
+    .pricing {
+      padding: 60px 24px;
+      background: white;
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .pricing h2 { text-align: center; font-size: 1.8em; margin-bottom: 40px; }
+    .price-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .price-card {
+      border: 1px solid #e8e8e0;
+      border-radius: 16px;
+      padding: 28px 20px;
+      text-align: center;
+      background: white;
+    }
+    .price-card.featured {
+      border-color: #e07040;
+      box-shadow: 0 4px 20px rgba(224, 112, 64, 0.15);
+      position: relative;
+    }
+    .price-card.featured::before {
+      content: 'Most Popular';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #e07040;
+      color: white;
+      padding: 4px 16px;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+    .price-card h3 { font-size: 1.2em; margin-bottom: 4px; }
+    .price-card .price { font-size: 2em; font-weight: 800; margin: 8px 0; }
+    .price-card .period { color: #888; font-size: 0.85em; margin-bottom: 16px; }
+    .price-card ul { list-style: none; text-align: left; padding: 0; }
+    .price-card li { padding: 6px 0; font-size: 0.9em; color: #444; }
+    .price-card li::before { content: '✓ '; color: #2a8; font-weight: bold; }
+
+    /* Sources */
+    .sources {
+      padding: 60px 24px;
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .sources h2 { text-align: center; font-size: 1.8em; margin-bottom: 32px; }
+    .source-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .source-card {
+      padding: 16px;
+      border-radius: 10px;
+      background: #f8f8f5;
+      border: 1px solid #eee;
+    }
+    .source-card .name { font-weight: 600; }
+    .source-card .meta { font-size: 0.8em; color: #888; }
+    .source-card .badge {
+      display: inline-block;
+      font-size: 0.7em;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-top: 6px;
+    }
+    .badge-free { background: #e0f5e0; color: #2a7; }
+    .badge-key { background: #fff3e0; color: #c80; }
+    .badge-sub { background: #f0e0f5; color: #82a; }
+
+    /* CTA */
+    .cta {
+      padding: 60px 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #fff8f0 0%, #f0faf0 100%);
+    }
+    .cta h2 { font-size: 1.8em; margin-bottom: 16px; }
+    .cta p { color: #666; margin-bottom: 24px; }
+    .cta .hero-install { margin-bottom: 24px; }
+
+    /* Footer */
+    footer {
+      padding: 32px 24px;
+      text-align: center;
+      color: #aaa;
+      font-size: 0.85em;
+    }
+    footer a { color: #888; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2em; }
+      .prompt-grid, .feature-grid, .price-grid, .source-grid { grid-template-columns: 1fr; }
+      .btn-secondary { margin-left: 0; margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1>Turn your AI into a<br><span>personal chef</span></h1>
+      <p class="subtitle">Search 9 recipe databases at once. Adapt any recipe to your diet. Plan meals. Build grocery lists. All through Claude, Cursor, or any MCP client.</p>
+      <div class="hero-install">npm install -g recipe-mcp</div>
+      <p class="hero-note">Zero dependencies. Works in 2 minutes. No API keys needed.</p>
+      <div class="btn-group">
+        <a href="https://github.com/recipe-mcp/recipe-mcp" class="btn btn-primary">View on GitHub</a>
+        <a href="#pricing" class="btn btn-secondary">See Pricing</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- What You Can Say -->
+  <section class="prompts">
+    <div class="container">
+      <h2>Just talk to your AI</h2>
+      <div class="prompt-grid">
+        <div class="prompt-card">
+          <div class="q">"Find me a quick weeknight pasta"</div>
+          <div class="a">Searches 9 databases at once</div>
+        </div>
+        <div class="prompt-card">
+          <div class="q">"Make this recipe dairy-free"</div>
+          <div class="a">Swaps milk → oat milk, cheese → nutritional yeast</div>
+        </div>
+        <div class="prompt-card">
+          <div class="q">"I have chicken, rice, and garlic"</div>
+          <div class="a">Finds recipes ranked by ingredient match</div>
+        </div>
+        <div class="prompt-card">
+          <div class="q">"Plan my meals for the week"</div>
+          <div class="a">Generates a full plan with dietary preferences</div>
+        </div>
+        <div class="prompt-card">
+          <div class="q">"This serves 4, I need it for 12"</div>
+          <div class="a">Scales everything, converts units too</div>
+        </div>
+        <div class="prompt-card">
+          <div class="q">"Make me a grocery list"</div>
+          <div class="a">Organized by store aisle, deduplicated</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="container">
+      <h2>16 tools for cooking with AI</h2>
+      <p class="subtitle">Everything your AI needs to help you cook</p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon">🔍</div>
+          <h3>Multi-Source Search</h3>
+          <p>Search 9 recipe databases simultaneously</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🌐</div>
+          <h3>Any Blog URL</h3>
+          <p>Paste any recipe URL — it extracts the data automatically</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🥗</div>
+          <h3>Dietary Adaptation</h3>
+          <p>Smart substitutions for 12 diets including kosher and halal</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">⚖️</div>
+          <h3>Recipe Scaling</h3>
+          <p>Double, halve, or scale by any amount with unit conversion</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🧊</div>
+          <h3>Fridge Search</h3>
+          <p>"What can I make with what I have?"</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📅</div>
+          <h3>Meal Planning</h3>
+          <p>Auto-generate weekly plans with your preferences</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🛒</div>
+          <h3>Grocery Lists</h3>
+          <p>Categorized by aisle, deduplicated</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">⏱️</div>
+          <h3>Cooking Timelines</h3>
+          <p>Step-by-step timing with active vs passive time</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🎲</div>
+          <h3>Random Recipes</h3>
+          <p>Inspiration when you don't know what to cook</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dietary Adaptation -->
+  <section class="dietary">
+    <div class="container">
+      <h2>Smart dietary adaptation</h2>
+      <p class="subtitle">Most tools reject recipes that don't match your diet. We adapt them with intelligent substitutions.</p>
+
+      <table class="sub-table">
+        <thead><tr><th>Found in recipe</th><th>Replaced with</th></tr></thead>
+        <tbody>
+          <tr><td class="from">milk</td><td class="to">oat milk</td></tr>
+          <tr><td class="from">butter</td><td class="to">coconut oil</td></tr>
+          <tr><td class="from">parmesan</td><td class="to">nutritional yeast</td></tr>
+          <tr><td class="from">cream</td><td class="to">coconut cream</td></tr>
+          <tr><td class="from">pasta</td><td class="to">rice noodles</td></tr>
+          <tr><td class="from">flour</td><td class="to">almond flour</td></tr>
+        </tbody>
+      </table>
+
+      <div class="diet-tags">
+        <span class="diet-tag">Vegetarian</span>
+        <span class="diet-tag">Vegan</span>
+        <span class="diet-tag">Gluten-Free</span>
+        <span class="diet-tag">Dairy-Free</span>
+        <span class="diet-tag">Nut-Free</span>
+        <span class="diet-tag">Pescatarian</span>
+        <span class="diet-tag">Keto</span>
+        <span class="diet-tag">Low-Carb</span>
+        <span class="diet-tag">Paleo</span>
+        <span class="diet-tag">Shellfish-Free</span>
+        <span class="diet-tag">Kosher</span>
+        <span class="diet-tag">Halal</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <h2>Pricing</h2>
+      <div class="price-grid">
+        <div class="price-card">
+          <h3>Free</h3>
+          <div class="price">$0</div>
+          <div class="period">forever</div>
+          <ul>
+            <li>5 recipe sources</li>
+            <li>Full recipe details</li>
+            <li>Any blog URL extraction</li>
+            <li>Random recipes</li>
+            <li>50 searches/day</li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <h3>Plus</h3>
+          <div class="price">$8</div>
+          <div class="period">per year</div>
+          <ul>
+            <li>All 9 recipe sources</li>
+            <li>NYT Cooking access</li>
+            <li>Spoonacular (1M+ recipes)</li>
+            <li>Edamam (nutrition data)</li>
+            <li>Unlimited searches</li>
+          </ul>
+        </div>
+        <div class="price-card featured">
+          <h3>Pro</h3>
+          <div class="price">$19</div>
+          <div class="period">per year</div>
+          <ul>
+            <li>Everything in Plus</li>
+            <li>Dietary adaptation</li>
+            <li>Recipe scaling</li>
+            <li>Ingredient search</li>
+            <li>Meal planning</li>
+            <li>Grocery lists</li>
+            <li>Cooking timelines</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sources -->
+  <section class="sources">
+    <div class="container">
+      <h2>9 recipe sources built in</h2>
+      <div class="source-grid">
+        <div class="source-card">
+          <div class="name">TheMealDB</div>
+          <div class="meta">280+ international meals</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="source-card">
+          <div class="name">TheCocktailDB</div>
+          <div class="meta">500+ cocktails</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="source-card">
+          <div class="name">Web Recipe</div>
+          <div class="meta">Any blog URL</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="source-card">
+          <div class="name">RecipePuppy</div>
+          <div class="meta">1M+ recipes</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="source-card">
+          <div class="name">Spoonacular</div>
+          <div class="meta">1M+ with nutrition</div>
+          <span class="badge badge-key">API Key</span>
+        </div>
+        <div class="source-card">
+          <div class="name">Edamam</div>
+          <div class="meta">2M+ recipes</div>
+          <span class="badge badge-key">API Key</span>
+        </div>
+        <div class="source-card">
+          <div class="name">Tasty</div>
+          <div class="meta">Buzzfeed recipes</div>
+          <span class="badge badge-key">API Key</span>
+        </div>
+        <div class="source-card">
+          <div class="name">NYT Cooking</div>
+          <div class="meta">Premium recipes</div>
+          <span class="badge badge-sub">Subscription</span>
+        </div>
+        <div class="source-card">
+          <div class="name">DummyJSON</div>
+          <div class="meta">50 demo recipes</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container">
+      <h2>Ready to start cooking with AI?</h2>
+      <p>Install in 2 minutes. No API keys needed.</p>
+      <div class="hero-install">npm install -g recipe-mcp</div>
+      <br><br>
+      <a href="https://github.com/recipe-mcp/recipe-mcp" class="btn btn-primary">Get Started on GitHub</a>
+    </div>
+  </section>
+
+  <footer>
+    <p><a href="https://github.com/recipe-mcp/recipe-mcp">GitHub</a> · MIT License</p>
+  </footer>
+
+</body>
+</html>

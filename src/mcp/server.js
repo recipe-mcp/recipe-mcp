@@ -45,7 +45,7 @@ function requirePro(featureName) {
     throw new Error(
       `"${featureName}" is a Pro feature. ` +
       `You're on the ${tier === 'plus' ? 'Plus' : 'Free'} tier.\n\n` +
-      `Upgrade to Pro ($9/month) with the "recipe_license" tool to unlock:\n` +
+      `Upgrade to Pro ($19/year) with the "recipe_license" tool to unlock:\n` +
       `- Smart dietary adaptation with substitutions\n` +
       `- Recipe scaling & unit conversion\n` +
       `- Ingredient-based search ("what's in my fridge?")\n` +
