@@ -24,8 +24,11 @@ import { scaleRecipe, convertUnits, formatScaledRecipe } from '../premium/recipe
 import { searchByIngredients, formatIngredientSearch } from '../premium/ingredient-search.js';
 import { createTimeline, getStep, formatTimeline } from '../premium/cooking-timer.js';
 
+// Favorites system
+import { getFavorites, saveFavorite, removeFavorite, formatFavorites } from '../core/favorites.js';
+
 // License system
-import { getCurrentTier, getCurrentTierConfig, isSourceAllowed, hasPremiumFeatures, activateLicense, getLicenseStatus, getAllTiers } from '../core/license.js';
+import { getCurrentTier, getCurrentTierConfig, isSourceAllowed, hasPremiumFeatures, hasAllSources, activateLicense, getLicenseStatus, getAllTiers } from '../core/license.js';
 
 import {
   getAllAdapters,
@@ -38,6 +41,19 @@ import {
 import { Capabilities } from '../core/types.js';
 
 // ── License gate helper ─────────────────────────────────────────────
+
+function requirePlus(featureName) {
+  if (!hasAllSources()) {
+    throw new Error(
+      `"${featureName}" requires Plus or Pro. ` +
+      `You're on the Free tier.\n\n` +
+      `Upgrade to Plus ($8/year) to unlock:\n` +
+      `- All 9 recipe sources\n` +
+      `- Save favorites across all sources\n\n` +
+      `Or Pro ($19/year) for everything in Plus + premium features.`
+    );
+  }
+}
 
 function requirePro(featureName) {
   if (!hasPremiumFeatures()) {
@@ -129,23 +145,54 @@ const TOOLS = [
     },
   },
   {
-    name: 'recipe_box',
-    description: "Browse the user's saved recipe box (for sources that support it, like NYT Cooking).",
-    inputSchema: {
-      type: 'object',
-      properties: {
-        source: { type: 'string', description: 'Source adapter key (default: "nyt")', default: 'nyt' },
-        page: { type: 'number', description: 'Page number (default: 1)', default: 1 },
-      },
-    },
-  },
-  {
     name: 'recipe_collections',
     description: "Get the user's recipe collections/folders (for sources that support it, like NYT Cooking).",
     inputSchema: {
       type: 'object',
       properties: {
         source: { type: 'string', description: 'Source adapter key (default: "nyt")', default: 'nyt' },
+      },
+    },
+  },
+
+  // ── Plus tier tools ─────────────────────────────────────────────
+  {
+    name: 'recipe_save',
+    description:
+      '🔒 Plus — Save a recipe to your local favorites. Works with any source. ' +
+      'Provide a recipe ID/URL to fetch and save it, or provide title and URL directly.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Recipe ID or URL to save' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        title: { type: 'string', description: 'Optional: recipe title (if providing URL directly)' },
+        url: { type: 'string', description: 'Optional: recipe URL (if not using ID lookup)' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'recipe_favorites',
+    description:
+      '🔒 Plus — List your saved favorite recipes across all sources.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page: { type: 'number', description: 'Page number (default: 1)', default: 1 },
+      },
+    },
+  },
+  {
+    name: 'recipe_unsave',
+    description:
+      '🔒 Plus — Remove a recipe from your favorites by ID or by list number.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Recipe ID to remove' },
+        source: { type: 'string', description: 'Optional: source adapter key' },
+        index: { type: 'number', description: 'Optional: remove by list number (from recipe_favorites)' },
       },
     },
   },
@@ -451,17 +498,37 @@ async function handleTool(name, args) {
       return `Available recipe sources (${all.length}):\n\n${lines.join('\n\n')}`;
     }
 
-    case 'recipe_box': {
-      const source = args.source || 'nyt';
-      const adapter = getAdapter(source);
-      if (!adapter) throw new Error(`Unknown source: ${source}`);
-      if (!adapter.capabilities.has(Capabilities.RECIPE_BOX)) {
-        throw new Error(`${adapter.name} does not support recipe box.`);
+    case 'recipe_save': {
+      requirePlus('Favorites');
+      // Fetch the recipe to get its details
+      const recipe = await getRecipeFrom(args.id, args.source);
+      const result = saveFavorite({
+        id: recipe.id || args.id,
+        source: recipe.source || args.source || 'unknown',
+        title: args.title || recipe.title,
+        url: args.url || recipe.url || `${args.id}`,
+      });
+      return result.message;
+    }
+
+    case 'recipe_favorites': {
+      requirePlus('Favorites');
+      const favorites = getFavorites();
+      return formatFavorites(favorites, args.page || 1);
+    }
+
+    case 'recipe_unsave': {
+      requirePlus('Favorites');
+      if (typeof args.index === 'number') {
+        // Convert from 1-based (user-facing) to 0-based (internal)
+        const result = removeFavorite({ index: args.index - 1 });
+        return result.message;
       }
-      const recipes = await adapter.getRecipeBox({ page: args.page || 1 });
-      if (!recipes.length) return 'No saved recipes found.';
-      return `Saved recipes (${recipes.length}):\n\n` +
-        recipes.map(r => `- **${r.title}** — ${r.url}`).join('\n');
+      if (args.id) {
+        const result = removeFavorite({ id: args.id, source: args.source });
+        return result.message;
+      }
+      throw new Error('Provide either a recipe ID or an index number to remove.');
     }
 
     case 'recipe_collections': {

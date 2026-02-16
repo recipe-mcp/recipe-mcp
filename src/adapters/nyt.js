@@ -168,7 +168,6 @@ export class NytAdapter extends RecipeAdapter {
     return new Set([
       Capabilities.SEARCH,
       Capabilities.GET_RECIPE,
-      Capabilities.RECIPE_BOX,
       Capabilities.COLLECTIONS,
     ]);
   }
@@ -241,19 +240,6 @@ export class NytAdapter extends RecipeAdapter {
     recipe.id = id;
     recipe.url = url;
     return recipe;
-  }
-
-  async getRecipeBox(opts = {}) {
-    const page = opts.page || 1;
-    const url = `${BASE}/recipe-box/all?page=${page}`;
-    const html = await fetchPage(url);
-    const links = extractLinks(html, '[^"]*\\/recipes\\/[^"]*');
-    return links.map(l => ({
-      id: l.href.match(/\/recipes\/(\d+)/)?.[1] || null,
-      source: ADAPTER_KEY,
-      title: l.text,
-      url: l.href.startsWith('http') ? l.href : `${BASE}${l.href}`,
-    }));
   }
 
   async getCollections() {

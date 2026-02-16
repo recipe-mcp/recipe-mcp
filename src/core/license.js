@@ -34,7 +34,7 @@ const TIERS = {
     allowedSources: null,         // all sources
     premiumFeatures: false,
     searchLimit: Infinity,
-    description: 'All 9 recipe sources including NYT Cooking, Spoonacular, Edamam, Tasty',
+    description: 'All 9 recipe sources including NYT Cooking, Spoonacular, Edamam, Tasty + save favorites across all sources',
   },
   pro: {
     name: 'Pro',

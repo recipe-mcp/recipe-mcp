@@ -103,6 +103,7 @@ Everything in Free, plus:
 
 - **All 9 recipe sources** unlocked (NYT Cooking, Spoonacular, Edamam, Tasty)
 - **1M+ recipes** from premium databases
+- **Save favorites** across all sources — build your personal recipe collection locally
 - Unlimited searches (Free tier: 50/day)
 - **Requires setup** — each additional source needs a free API key (see [Source Setup Guide](#source-setup-guide) below)
 
@@ -190,7 +191,7 @@ No keys, no accounts, no config. They just work.
    - **In Claude:** *"Configure Tasty with key `your-rapidapi-key`"*
    - **CLI:** `recipe-mcp configure tasty` (then paste key when prompted)
 
-### NYT Cooking — premium recipes, recipe box, collections
+### NYT Cooking — premium recipes and collections
 
 **Tier required:** Plus or Pro
 **Also requires:** An active NYT Cooking subscription ($5/month or $40/year from NYT)
@@ -225,7 +226,7 @@ To see which sources are configured and ready:
 
 ---
 
-## All 16 MCP Tools
+## All 19 MCP Tools
 
 ### Free Tools (available on all tiers)
 
@@ -235,11 +236,18 @@ To see which sources are configured and ready:
 | `recipe_get` | Get full recipe by ID or URL (auto-detects source) |
 | `recipe_random` | Random recipe for inspiration |
 | `recipe_sources` | See which sources are configured and ready |
-| `recipe_box` | Browse your saved recipes (NYT Cooking, requires Plus+) |
-| `recipe_collections` | Browse recipe collections (NYT Cooking, requires Plus+) |
+| `recipe_collections` | Browse recipe collections (NYT Cooking) |
 | `recipe_configure` | Set API keys and auth tokens for sources |
 | `recipe_license` | Activate a license or check current tier |
 | `list_diets` | See all 12 available dietary profiles |
+
+### Plus Tools (require Plus or Pro license)
+
+| Tool | What it does |
+|------|-------------|
+| `recipe_save` | Save any recipe to your local favorites (works across all sources) |
+| `recipe_favorites` | List your saved favorite recipes |
+| `recipe_unsave` | Remove a recipe from favorites by ID or list number |
 
 ### Pro Tools (require Pro license)
 
@@ -301,8 +309,11 @@ recipe-mcp random --source thecocktaildb
 # See your sources
 recipe-mcp sources
 
+# Favorites (requires Plus+)
+recipe-mcp favorites
+recipe-mcp save <recipe-id> --source themealdb
+
 # NYT Cooking (requires Plus+ and NYT subscription)
-recipe-mcp box
 recipe-mcp collections
 
 # Configure API keys
