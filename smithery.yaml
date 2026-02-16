@@ -1,0 +1,23 @@
+name: recipe-mcp
+description: Universal recipe MCP server — search, fetch, and plan meals from TheMealDB, Spoonacular, NYT Cooking, and more
+version: 1.0.0
+homepage: https://github.com/recipe-mcp/recipe-mcp
+license: MIT
+keywords:
+  - recipe
+  - cooking
+  - meal-planning
+  - food
+  - nyt-cooking
+  - themealdb
+  - spoonacular
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['src/mcp/server.js'],
+    })

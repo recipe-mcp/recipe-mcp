@@ -1,0 +1,113 @@
+name: Bug Report
+description: Something isn't working right? Let us know!
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the info below so we can fix it quickly.
+
+  - type: dropdown
+    id: tool
+    attributes:
+      label: Which tool were you using?
+      options:
+        - recipe_search
+        - recipe_get
+        - recipe_random
+        - recipe_adapt (dietary)
+        - recipe_scale
+        - ingredient_search
+        - cooking_timeline
+        - meal_plan
+        - grocery_list
+        - recipe_configure
+        - recipe_license
+        - CLI (command line)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Which recipe source?
+      options:
+        - TheMealDB
+        - NYT Cooking
+        - Spoonacular
+        - TheCocktailDB
+        - DummyJSON
+        - RecipePuppy
+        - Web Recipe (URL)
+        - Edamam
+        - Tasty
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe what went wrong. Include any error messages you saw.
+      placeholder: "When I searched for 'pasta', I got an error saying..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: "I expected to see a list of pasta recipes"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we make this happen on our end?
+      placeholder: |
+        1. Open Claude Desktop
+        2. Ask "search for pasta recipes"
+        3. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: Which AI client are you using?
+      options:
+        - Claude Desktop
+        - Cursor
+        - VS Code + Continue
+        - CLI directly
+        - Other MCP client
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Run `node --version` in your terminal
+      placeholder: "v20.10.0"
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 14, Windows 11, Ubuntu 22.04"
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: License tier
+      options:
+        - Free
+        - Pro
+    validations:
+      required: true

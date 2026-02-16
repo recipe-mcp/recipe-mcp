@@ -1,0 +1,34 @@
+{
+  "name": "recipe-mcp",
+  "version": "1.0.0",
+  "description": "The universal recipe MCP server — search, fetch, and plan meals from multiple recipe sources",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "recipe-mcp": "./src/cli/index.js",
+    "recipe-mcp-server": "./src/mcp/server.js"
+  },
+  "scripts": {
+    "start": "node src/cli/index.js",
+    "mcp": "node src/mcp/server.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "recipe",
+    "cooking",
+    "meal-planning",
+    "nyt-cooking",
+    "themealdb",
+    "spoonacular",
+    "model-context-protocol",
+    "claude",
+    "ai",
+    "llm"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
