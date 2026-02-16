@@ -622,11 +622,13 @@ const TOOLS = [
     description:
       '🔒 Pro — Extract a recipe from an Instagram post or reel. ' +
       'Turns messy Instagram captions into structured, cookable recipes ' +
-      'with ingredients and step-by-step instructions. Works with public posts.',
+      'with ingredients and step-by-step instructions. ' +
+      'Tip: If URL-only mode fails, ask the user to copy-paste the caption text from the Instagram app and pass it as the "caption" parameter.',
     inputSchema: {
       type: 'object',
       properties: {
         url: { type: 'string', description: 'Instagram post or reel URL' },
+        caption: { type: 'string', description: 'Optional: paste the Instagram caption text directly (recommended — always works even when URL scraping is blocked)' },
       },
       required: ['url'],
     },
@@ -1081,7 +1083,7 @@ async function handleTool(name, args) {
       requirePro('Instagram Recipes');
       const adapter = getAdapter('instagram');
       if (!adapter) throw new Error('Instagram adapter not available.');
-      const recipe = await adapter.getRecipe(args.url);
+      const recipe = await adapter.getRecipe(args.url, { caption: args.caption });
       return formatRecipeDetail(recipe);
     }
 

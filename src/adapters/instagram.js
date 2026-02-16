@@ -2,14 +2,22 @@
  * Instagram Recipe adapter — extracts recipes from Instagram posts.
  *
  * Instagram recipe posts typically have the recipe in the caption text.
- * This adapter fetches the post via Instagram's oEmbed endpoint (or page
- * scraping) and parses the caption into a structured recipe format.
+ * Since Instagram requires authentication to view post content via API,
+ * this adapter supports TWO modes:
  *
- * Pro tier — works with public posts only.
+ * 1. URL mode: Attempts to fetch the post page and extract caption from
+ *    meta tags / embedded JSON (works when Instagram serves server-rendered
+ *    content, e.g. for some public posts or with cookies).
+ *
+ * 2. Caption mode (recommended): User pastes the caption text directly.
+ *    This always works regardless of Instagram's scraping restrictions.
+ *    Usage: recipe_instagram with url + caption parameters.
+ *
+ * Pro tier only.
  *
  * Strategy:
- * 1. Fetch the Instagram post page
- * 2. Extract the caption from meta tags / JSON-LD
+ * 1. If caption text is provided directly, parse it immediately
+ * 2. Otherwise try to fetch from URL (may fail due to Instagram restrictions)
  * 3. Parse the freeform caption text into ingredients + steps
  * 4. Return a normalized RecipeDetail
  */
@@ -21,11 +29,10 @@ const ADAPTER_KEY = 'instagram';
 
 /**
  * Extract Instagram post data from the HTML page.
- * Instagram embeds post data in meta tags on public posts.
+ * Instagram embeds post data in meta tags on public posts (when available).
  */
 function extractFromMeta(html, url) {
   const getMetaContent = (property) => {
-    // Try og: and regular meta tags
     const patterns = [
       new RegExp(`<meta[^>]+property="${property}"[^>]+content="([^"]*)"`, 'i'),
       new RegExp(`<meta[^>]+content="([^"]*)"[^>]+property="${property}"`, 'i'),
@@ -44,6 +51,31 @@ function extractFromMeta(html, url) {
   const author = title.match(/^(.+?)\s+on\s+Instagram/i)?.[1] || '';
 
   return { title: author ? `${author}'s Recipe` : title, description, image, author };
+}
+
+/**
+ * Try to extract the username from the embed page (which works without auth).
+ */
+async function fetchAuthorFromEmbed(shortcode) {
+  try {
+    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/`;
+    const res = await fetch(embedUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return '';
+    const html = await res.text();
+    const usernameMatch = html.match(/class="Username[^"]*"[^>]*>[^<]*<span[^>]*>([^<]+)<\/span>/);
+    if (usernameMatch) return usernameMatch[1];
+    const altMatch = html.match(/class="UsernameText">([^<]+)</);
+    if (altMatch) return altMatch[1];
+    const altMatch2 = html.match(/alt="([^"]+)" \/><\/a><\/div><div class="HeaderText"/);
+    if (altMatch2) return altMatch2[1];
+    return '';
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -69,7 +101,7 @@ function parseCaption(text) {
 
   // Try to find ingredient and instruction sections
   const ingredientHeaders = /(?:ingredients?|what you.?ll need|you.?ll need|shopping list)[:\s]*\n/i;
-  const instructionHeaders = /(?:instructions?|directions?|method|steps?|how to make|how to)[:\s]*\n/i;
+  const instructionHeaders = /(?:instructions?|directions?|method|steps?|how to make|how to|preparation)[:\s]*\n/i;
 
   let ingredients = [];
   let steps = [];
@@ -79,11 +111,9 @@ function parseCaption(text) {
   const instructionMatch = decoded.search(instructionHeaders);
 
   if (ingredientMatch !== -1 && instructionMatch !== -1) {
-    // Both sections found
     const ingStart = decoded.indexOf('\n', ingredientMatch) + 1;
 
     if (ingredientMatch < instructionMatch) {
-      // Ingredients first, then instructions
       const ingText = decoded.slice(ingStart, instructionMatch).trim();
       const stepStart = decoded.indexOf('\n', instructionMatch) + 1;
       const stepText = decoded.slice(stepStart).trim();
@@ -92,7 +122,6 @@ function parseCaption(text) {
       steps = parseListItems(stepText);
       description = decoded.slice(0, ingredientMatch).trim();
     } else {
-      // Instructions first (less common)
       const stepStart = decoded.indexOf('\n', instructionMatch) + 1;
       const stepText = decoded.slice(stepStart, ingredientMatch).trim();
       const ingText = decoded.slice(ingStart).trim();
@@ -102,13 +131,11 @@ function parseCaption(text) {
       description = decoded.slice(0, instructionMatch).trim();
     }
   } else if (ingredientMatch !== -1) {
-    // Only ingredients header found
     const ingStart = decoded.indexOf('\n', ingredientMatch) + 1;
     const ingText = decoded.slice(ingStart).trim();
     ingredients = parseListItems(ingText);
     description = decoded.slice(0, ingredientMatch).trim();
   } else if (instructionMatch !== -1) {
-    // Only instructions header found
     const stepStart = decoded.indexOf('\n', instructionMatch) + 1;
     const stepText = decoded.slice(stepStart).trim();
     steps = parseListItems(stepText);
@@ -125,9 +152,9 @@ function parseCaption(text) {
   // Clean up: remove hashtags from description
   description = description.replace(/#\w+/g, '').trim();
 
-  // Remove empty items
-  ingredients = ingredients.filter(i => i.length > 2);
-  steps = steps.filter(s => s.length > 5);
+  // Remove empty items and hashtag-only lines
+  ingredients = ingredients.filter(i => i.length > 2 && !i.match(/^#\w/));
+  steps = steps.filter(s => s.length > 5 && !s.match(/^#\w/));
 
   return { ingredients, steps, description };
 }
@@ -142,11 +169,10 @@ function parseListItems(text) {
     .map(line => line.trim())
     .filter(Boolean)
     .map(line => {
-      // Strip common list prefixes
       return line
         .replace(/^[-•*▪▸►→➤]\s*/, '')
         .replace(/^\d+[.)]\s*/, '')
-        .replace(/^[🔸🔹🔺🔻⭐✅☑️✔️🟢🟡🔴]\s*/, '')
+        .replace(/^[🔸🔹🔺🔻⭐✅☑️✔️🟢🟡🔴🧈🥚🍳🥣🧂🧅🧄]\s*/, '')
         .trim();
     })
     .filter(item => item.length > 1);
@@ -155,13 +181,10 @@ function parseListItems(text) {
 /**
  * Smart parse: when there are no clear headers, try to detect
  * ingredients vs instructions by content.
- *
- * Ingredients tend to: start with quantities, be shorter, contain units
- * Steps tend to: start with verbs, be longer, describe actions
  */
 function smartParse(lines) {
   const ingredientPattern = /^\d|^[½¼¾⅓⅔⅛]|cup|tbsp|tsp|tablespoon|teaspoon|oz|lb|pound|gram|ml|liter|pinch|dash|clove|bunch|can\b|package|stick/i;
-  const stepPattern = /^(preheat|heat|cook|bake|mix|stir|combine|add|pour|whisk|fold|season|serve|place|set|let|bring|simmer|boil|sauté|saute|chop|dice|slice|mince|grill|roast|fry|drain|remove|transfer|top|garnish|blend|process|pulse|spread|layer|arrange|brush|drizzle|toss|marinate)/i;
+  const stepPattern = /^(preheat|heat|cook|bake|mix|stir|combine|add|pour|whisk|fold|season|serve|place|set|let|bring|simmer|boil|sauté|saute|chop|dice|slice|mince|grill|roast|fry|drain|remove|transfer|top|garnish|blend|process|pulse|spread|layer|arrange|brush|drizzle|toss|marinate|roll|knead|cover|refrigerate|freeze|thaw|melt|reduce|deglaze)/i;
 
   const ingredients = [];
   const steps = [];
@@ -169,7 +192,6 @@ function smartParse(lines) {
   let mode = 'unknown';
 
   for (const line of lines) {
-    // Skip hashtag lines
     if (line.match(/^#\w/) && !line.match(/^#\d/)) continue;
 
     if (ingredientPattern.test(line)) {
@@ -199,64 +221,103 @@ export class InstagramAdapter extends RecipeAdapter {
   }
 
   /**
-   * Extract a recipe from an Instagram post URL.
-   * Works with public posts that have recipe content in the caption.
+   * Extract a recipe from an Instagram post.
+   *
+   * @param {string} url - The Instagram post URL
+   * @param {object} [opts] - Options
+   * @param {string} [opts.caption] - Caption text pasted directly (recommended)
+   * @param {string} [opts.author] - Author name override
    */
-  async getRecipe(url) {
+  async getRecipe(url, opts = {}) {
     // Normalize URL
     let postUrl = url;
+    let shortcode = '';
     if (url.includes('instagram.com')) {
-      // Ensure it's a proper post URL
       const match = url.match(/instagram\.com\/(?:p|reel)\/([A-Za-z0-9_-]+)/);
       if (match) {
-        postUrl = `https://www.instagram.com/p/${match[1]}/`;
+        shortcode = match[1];
+        postUrl = `https://www.instagram.com/p/${shortcode}/`;
       }
-    } else {
-      throw new Error('Instagram adapter requires an Instagram post or reel URL.');
+    } else if (!opts.caption) {
+      throw new Error('Instagram adapter requires an Instagram post/reel URL, or provide caption text directly.');
     }
 
-    // Fetch the Instagram post page
-    const res = await fetch(postUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(15000),
-    });
+    // Mode 1: Caption provided directly (always works)
+    if (opts.caption) {
+      const parsed = parseCaption(opts.caption);
+      const author = opts.author || (shortcode ? await fetchAuthorFromEmbed(shortcode) : '') || 'Instagram';
+      const titleLine = parsed.description?.split(/[.\n]/)[0]?.slice(0, 80) || `${author}'s Recipe`;
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch Instagram post: ${res.status}. Make sure the post is public.`);
+      return {
+        id: postUrl || 'instagram-paste',
+        source: ADAPTER_KEY,
+        title: titleLine,
+        author,
+        description: parsed.description || '',
+        yieldText: '',
+        time: '',
+        prepTime: '',
+        cookTime: '',
+        ingredients: parsed.ingredients,
+        steps: parsed.steps.length
+          ? parsed.steps
+          : ['Full step-by-step instructions were not clearly separated in the caption. See the original post for details.'],
+        tags: ['instagram'],
+        image: '',
+        rating: null,
+        ratingCount: null,
+        nutrition: null,
+        category: '',
+        cuisine: '',
+        url: postUrl,
+      };
     }
 
-    const html = await res.text();
-    const meta = extractFromMeta(html, postUrl);
+    // Mode 2: Try to fetch from URL (may fail due to Instagram restrictions)
+    let caption = '';
+    let meta = { title: 'Instagram Recipe', description: '', image: '', author: '' };
 
-    // Try to get more content from embedded JSON data
-    let caption = meta.description;
+    try {
+      const res = await fetch(postUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(15000),
+      });
 
-    // Instagram sometimes embeds full data in shared_data or additional_data scripts
-    const jsonMatch = html.match(/"caption":\s*\{[^}]*"text":\s*"((?:[^"\\]|\\.)*)"/);
-    if (jsonMatch) {
-      try {
-        caption = JSON.parse(`"${jsonMatch[1]}"`);
-      } catch { /* use meta description */ }
+      if (res.ok) {
+        const html = await res.text();
+        meta = extractFromMeta(html, postUrl);
+        caption = meta.description;
+
+        // Try embedded JSON data paths
+        const jsonMatch = html.match(/"caption":\s*\{[^}]*"text":\s*"((?:[^"\\]|\\.)*)"/);
+        if (jsonMatch) {
+          try { caption = JSON.parse(`"${jsonMatch[1]}"`); } catch { /* use meta */ }
+        }
+
+        const captionMatch2 = html.match(/"edge_media_to_caption":\s*\{"edges":\s*\[\s*\{"node":\s*\{"text":\s*"((?:[^"\\]|\\.)*)"/);
+        if (captionMatch2) {
+          try { caption = JSON.parse(`"${captionMatch2[1]}"`); } catch { /* use what we have */ }
+        }
+      }
+    } catch {
+      // Fetch failed — that's okay, we'll ask for caption
     }
 
-    // Also try the edge_media_to_caption path
-    const captionMatch2 = html.match(/"edge_media_to_caption":\s*\{"edges":\s*\[\s*\{"node":\s*\{"text":\s*"((?:[^"\\]|\\.)*)"/);
-    if (captionMatch2) {
-      try {
-        caption = JSON.parse(`"${captionMatch2[1]}"`);
-      } catch { /* use what we have */ }
-    }
-
+    // If we couldn't get the caption, try embed for author and return helpful error
     if (!caption || caption.length < 20) {
+      const author = shortcode ? await fetchAuthorFromEmbed(shortcode) : '';
+      const authorMsg = author ? ` (post by @${author})` : '';
       throw new Error(
-        'Could not extract recipe content from this Instagram post. ' +
-        'The post may be private, or it may not contain a recipe in the caption. ' +
-        'Try copying the caption text and using recipe_get with a blog URL instead.'
+        `Could not extract recipe caption from this Instagram post${authorMsg}. ` +
+        `Instagram requires login to view most post content.\n\n` +
+        `**How to use instead:** Copy the caption text from the Instagram app, then use:\n` +
+        `recipe_instagram with url "${postUrl}" and caption "paste the caption text here"\n\n` +
+        `In the Instagram app: tap the post → tap "more" on the caption → long press to copy the text.`
       );
     }
 
