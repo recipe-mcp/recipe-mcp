@@ -1,6 +1,6 @@
 {
   "name": "recipe-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "The universal recipe MCP server — search, fetch, and plan meals from multiple recipe sources",
   "type": "module",
   "main": "src/index.js",
