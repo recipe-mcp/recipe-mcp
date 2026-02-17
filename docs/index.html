@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>recipe-mcp — Turn Your AI Into a Personal Chef</title>
-  <meta name="description" content="Give your AI assistant access to 9 recipe databases. Smart dietary adaptation, meal planning, grocery lists, and more. Works with Claude, Cursor, and any MCP client.">
+  <meta name="description" content="Give your AI assistant access to 12 recipe sources and 25+ food blogs. 32 tools for smart dietary adaptation, meal planning, grocery lists, and more. Works with Claude, ChatGPT, Cursor, and any MCP client.">
   <meta property="og:title" content="recipe-mcp — Turn Your AI Into a Personal Chef">
-  <meta property="og:description" content="16 tools for cooking with AI. Search 9 recipe sources, adapt recipes to your diet, plan meals, build grocery lists.">
+  <meta property="og:description" content="32 tools for cooking with AI. Search 12 recipe sources and 25+ food blogs, adapt recipes to 12 diets, plan meals, build grocery lists.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://recipe-mcp.github.io/recipe-mcp">
   <style>
@@ -39,7 +39,7 @@
     .hero p.subtitle {
       font-size: 1.25em;
       color: #555;
-      max-width: 600px;
+      max-width: 620px;
       margin: 0 auto 32px;
     }
     .hero-install {
@@ -231,6 +231,38 @@
     .badge-free { background: #e0f5e0; color: #2a7; }
     .badge-key { background: #fff3e0; color: #c80; }
     .badge-sub { background: #f0e0f5; color: #82a; }
+    .badge-pro { background: #ffe0e0; color: #c44; }
+
+    /* Legal */
+    .legal-section {
+      padding: 60px 24px;
+      background: white;
+      border-bottom: 1px solid #e8e8e0;
+    }
+    .legal-section h2 { text-align: center; font-size: 1.8em; margin-bottom: 12px; }
+    .legal-section .subtitle { text-align: center; color: #888; margin-bottom: 32px; }
+    .legal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .legal-card {
+      padding: 24px;
+      border-radius: 12px;
+      background: #f8f8f5;
+      border: 1px solid #eee;
+      text-align: center;
+    }
+    .legal-card h3 { margin-bottom: 8px; }
+    .legal-card p { font-size: 0.85em; color: #888; margin-bottom: 12px; }
+    .legal-card a {
+      color: #e07040;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .legal-card a:hover { text-decoration: underline; }
 
     /* CTA */
     .cta {
@@ -249,12 +281,13 @@
       color: #aaa;
       font-size: 0.85em;
     }
-    footer a { color: #888; }
+    footer a { color: #888; text-decoration: none; }
+    footer a:hover { color: #555; }
 
     /* Responsive */
     @media (max-width: 600px) {
       .hero h1 { font-size: 2em; }
-      .prompt-grid, .feature-grid, .price-grid, .source-grid { grid-template-columns: 1fr; }
+      .prompt-grid, .feature-grid, .price-grid, .source-grid, .legal-grid { grid-template-columns: 1fr; }
       .btn-secondary { margin-left: 0; margin-top: 12px; }
     }
   </style>
@@ -265,7 +298,7 @@
   <section class="hero">
     <div class="container">
       <h1>Turn your AI into a<br><span>personal chef</span></h1>
-      <p class="subtitle">Search 9 recipe databases at once. Adapt any recipe to your diet. Plan meals. Build grocery lists. All through Claude, Cursor, or any MCP client.</p>
+      <p class="subtitle">Search 12 recipe sources and 25+ food blogs at once. Adapt any recipe to your diet. Plan meals. Build grocery lists. All through Claude, ChatGPT, Cursor, or any MCP client.</p>
       <div class="hero-install">npm install -g recipe-mcp</div>
       <p class="hero-note">Zero dependencies. Works in 2 minutes. No API keys needed.</p>
       <div class="btn-group">
@@ -282,11 +315,11 @@
       <div class="prompt-grid">
         <div class="prompt-card">
           <div class="q">"Find me a quick weeknight pasta"</div>
-          <div class="a">Searches 9 databases at once</div>
+          <div class="a">Searches 12 sources and 25+ blogs at once</div>
         </div>
         <div class="prompt-card">
           <div class="q">"Make this recipe dairy-free"</div>
-          <div class="a">Swaps milk → oat milk, cheese → nutritional yeast</div>
+          <div class="a">Swaps milk &rarr; oat milk, cheese &rarr; nutritional yeast</div>
         </div>
         <div class="prompt-card">
           <div class="q">"I have chicken, rice, and garlic"</div>
@@ -304,6 +337,14 @@
           <div class="q">"Make me a grocery list"</div>
           <div class="a">Organized by store aisle, deduplicated</div>
         </div>
+        <div class="prompt-card">
+          <div class="q">"Follow @halfbakedharvest on Instagram"</div>
+          <div class="a">Browse recipes from your favorite chef accounts</div>
+        </div>
+        <div class="prompt-card">
+          <div class="q">"What's in season right now?"</div>
+          <div class="a">Seasonal produce with recipe suggestions</div>
+        </div>
       </div>
     </div>
   </section>
@@ -311,53 +352,68 @@
   <!-- Features -->
   <section class="features">
     <div class="container">
-      <h2>16 tools for cooking with AI</h2>
+      <h2>32 tools for cooking with AI</h2>
       <p class="subtitle">Everything your AI needs to help you cook</p>
       <div class="feature-grid">
         <div class="feature-card">
-          <div class="icon">🔍</div>
+          <div class="icon">&#x1F50D;</div>
           <h3>Multi-Source Search</h3>
-          <p>Search 9 recipe databases simultaneously</p>
+          <p>Search 12 recipe sources and 25+ food blogs simultaneously</p>
         </div>
         <div class="feature-card">
-          <div class="icon">🌐</div>
+          <div class="icon">&#x1F310;</div>
           <h3>Any Blog URL</h3>
-          <p>Paste any recipe URL — it extracts the data automatically</p>
+          <p>Paste any recipe URL &mdash; it extracts the data automatically</p>
         </div>
         <div class="feature-card">
-          <div class="icon">🥗</div>
+          <div class="icon">&#x1F957;</div>
           <h3>Dietary Adaptation</h3>
           <p>Smart substitutions for 12 diets including kosher and halal</p>
         </div>
         <div class="feature-card">
-          <div class="icon">⚖️</div>
+          <div class="icon">&#x2696;&#xFE0F;</div>
           <h3>Recipe Scaling</h3>
           <p>Double, halve, or scale by any amount with unit conversion</p>
         </div>
         <div class="feature-card">
-          <div class="icon">🧊</div>
+          <div class="icon">&#x1F9CA;</div>
           <h3>Fridge Search</h3>
           <p>"What can I make with what I have?"</p>
         </div>
         <div class="feature-card">
-          <div class="icon">📅</div>
+          <div class="icon">&#x1F4C5;</div>
           <h3>Meal Planning</h3>
           <p>Auto-generate weekly plans with your preferences</p>
         </div>
         <div class="feature-card">
-          <div class="icon">🛒</div>
+          <div class="icon">&#x1F6D2;</div>
           <h3>Grocery Lists</h3>
           <p>Categorized by aisle, deduplicated</p>
         </div>
         <div class="feature-card">
-          <div class="icon">⏱️</div>
+          <div class="icon">&#x23F1;&#xFE0F;</div>
           <h3>Cooking Timelines</h3>
           <p>Step-by-step timing with active vs passive time</p>
         </div>
         <div class="feature-card">
-          <div class="icon">🎲</div>
-          <h3>Random Recipes</h3>
-          <p>Inspiration when you don't know what to cook</p>
+          <div class="icon">&#x1F4F8;</div>
+          <h3>Instagram Recipes</h3>
+          <p>Follow chef accounts and extract recipes from posts</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">&#x1F331;</div>
+          <h3>Seasonal Produce</h3>
+          <p>What's in season right now with recipe ideas</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">&#x2764;&#xFE0F;</div>
+          <h3>Favorites &amp; History</h3>
+          <p>Save recipes, add notes &amp; tags, track cook history</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">&#x1F4E4;</div>
+          <h3>Export &amp; Share</h3>
+          <p>Export to Notion/Google Docs, share to Slack/Discord</p>
         </div>
       </div>
     </div>
@@ -408,11 +464,12 @@
           <div class="price">$0</div>
           <div class="period">forever</div>
           <ul>
+            <li>Search 25+ food blogs</li>
             <li>5 recipe sources</li>
             <li>Full recipe details</li>
             <li>Any blog URL extraction</li>
             <li>Random recipes</li>
-            <li>50 searches/day</li>
+            <li>12 dietary profiles reference</li>
           </ul>
         </div>
         <div class="price-card">
@@ -420,10 +477,11 @@
           <div class="price">$8</div>
           <div class="period">per year</div>
           <ul>
-            <li>All 9 recipe sources</li>
-            <li>NYT Cooking access</li>
-            <li>Spoonacular (1M+ recipes)</li>
-            <li>Edamam (nutrition data)</li>
+            <li>Everything in Free</li>
+            <li>All 12 recipe sources</li>
+            <li>NYT Cooking, Spoonacular, Edamam, Tasty</li>
+            <li>Save favorites with notes &amp; tags</li>
+            <li>Cook history tracking</li>
             <li>Unlimited searches</li>
           </ul>
           <a href="https://recipe-mcp.lemonsqueezy.com/checkout/buy/3fe051d4-2f4a-44ed-98b7-a6d16903c4e6" class="btn btn-secondary" style="margin:16px 0 0;display:block;text-align:center;">Get Plus</a>
@@ -434,12 +492,15 @@
           <div class="period">per year</div>
           <ul>
             <li>Everything in Plus</li>
-            <li>Dietary adaptation</li>
-            <li>Recipe scaling</li>
-            <li>Ingredient search</li>
-            <li>Meal planning</li>
-            <li>Grocery lists</li>
+            <li>Dietary adaptation (12 diets)</li>
+            <li>Recipe scaling &amp; unit conversion</li>
+            <li>Smart ingredient substitutions</li>
+            <li>Instagram recipe extraction</li>
+            <li>Pantry tracking &amp; seasonal produce</li>
+            <li>Meal planning &amp; grocery lists</li>
             <li>Cooking timelines</li>
+            <li>Nutrition comparison</li>
+            <li>Export &amp; share</li>
           </ul>
           <a href="https://recipe-mcp.lemonsqueezy.com/checkout/buy/773b1bb9-3c62-4a94-b0f0-a621eda524ca" class="btn btn-primary" style="margin:16px 0 0;display:block;text-align:center;">Get Pro</a>
         </div>
@@ -450,7 +511,7 @@
   <!-- Sources -->
   <section class="sources">
     <div class="container">
-      <h2>9 recipe sources built in</h2>
+      <h2>12 recipe sources built in</h2>
       <div class="source-grid">
         <div class="source-card">
           <div class="name">TheMealDB</div>
@@ -463,6 +524,11 @@
           <span class="badge badge-free">Free</span>
         </div>
         <div class="source-card">
+          <div class="name">Recipe Blogs</div>
+          <div class="meta">25+ popular food blogs</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="source-card">
           <div class="name">Web Recipe</div>
           <div class="meta">Any blog URL</div>
           <span class="badge badge-free">Free</span>
@@ -470,6 +536,11 @@
         <div class="source-card">
           <div class="name">RecipePuppy</div>
           <div class="meta">1M+ recipes</div>
+          <span class="badge badge-free">Free</span>
+        </div>
+        <div class="source-card">
+          <div class="name">DummyJSON</div>
+          <div class="meta">50 demo recipes</div>
           <span class="badge badge-free">Free</span>
         </div>
         <div class="source-card">
@@ -493,9 +564,34 @@
           <span class="badge badge-sub">Subscription</span>
         </div>
         <div class="source-card">
-          <div class="name">DummyJSON</div>
-          <div class="meta">50 demo recipes</div>
-          <span class="badge badge-free">Free</span>
+          <div class="name">Instagram</div>
+          <div class="meta">Chef account recipes</div>
+          <span class="badge badge-pro">Pro</span>
+        </div>
+        <div class="source-card">
+          <div class="name">MealieAPI</div>
+          <div class="meta">Self-hosted recipes</div>
+          <span class="badge badge-key">API Key</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Legal -->
+  <section class="legal-section">
+    <div class="container">
+      <h2>Policies</h2>
+      <p class="subtitle">14-day money-back guarantee on all paid plans.</p>
+      <div class="legal-grid">
+        <div class="legal-card">
+          <h3>Terms of Service</h3>
+          <p>Usage terms, acceptable use, and liability.</p>
+          <a href="terms.html">Read Terms &rarr;</a>
+        </div>
+        <div class="legal-card">
+          <h3>Refund Policy</h3>
+          <p>14-day guarantee, cancellation, and refund process.</p>
+          <a href="refund.html">Read Policy &rarr;</a>
         </div>
       </div>
     </div>
@@ -513,7 +609,13 @@
   </section>
 
   <footer>
-    <p><a href="https://github.com/recipe-mcp/recipe-mcp">GitHub</a> · MIT License</p>
+    <p>
+      <a href="https://github.com/recipe-mcp/recipe-mcp">GitHub</a> &middot;
+      <a href="https://www.npmjs.com/package/recipe-mcp">npm</a> &middot;
+      <a href="terms.html">Terms</a> &middot;
+      <a href="refund.html">Refund Policy</a>
+    </p>
+    <p style="margin-top:8px;">&copy; 2026 recipe-mcp &middot; MIT License</p>
   </footer>
 
 </body>

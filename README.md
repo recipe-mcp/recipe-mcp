@@ -239,9 +239,17 @@ Example: *"Get the recipe from https://www.budgetbytes.com/slow-cooker-chili/"*
 
 **Tier required:** Pro
 
-Paste any Instagram post URL that contains a recipe, and recipe-mcp extracts a structured, cookable recipe from the caption — ingredients list, step-by-step instructions, and metadata. No more trying to read tiny captions or watch 10-minute videos for a recipe.
+Two ways to use Instagram:
 
-Example: *"Get the recipe from https://www.instagram.com/p/ABC123/"*
+1. **Follow chef accounts** — Build your own list of food creators and browse their recipe posts:
+   - *"Follow @halfbakedharvest on Instagram"*
+   - *"Show my followed Instagram accounts"*
+   - *"Browse recipes from halfbakedharvest"*
+
+2. **Extract from any post** — Paste any Instagram post URL and get a structured, cookable recipe from the caption:
+   - *"Get the recipe from https://www.instagram.com/p/ABC123/"*
+
+No more trying to read tiny captions or watch 10-minute videos for a recipe.
 
 ### Check your sources
 
@@ -299,6 +307,10 @@ To see which sources are configured and ready:
 | `pantry_add` | Add ingredients to your pantry (auto-categorized by aisle) |
 | `pantry_remove` | Remove ingredients from your pantry |
 | `pantry_list` | View your pantry inventory, organized by category |
+| `instagram_follow` | Follow a chef account to browse their recipes |
+| `instagram_unfollow` | Unfollow an Instagram account |
+| `instagram_accounts` | List your followed Instagram chef accounts |
+| `instagram_browse` | Browse/search recipe posts from followed accounts |
 
 ---
 
@@ -455,6 +467,27 @@ src/
 **Spoonacular/Edamam not working**
 - Run `recipe-mcp configure <source>` and enter your API key
 - Check that your free tier hasn't run out of requests for the day
+
+---
+
+## Demo
+
+Run a full interactive demo that walks through every major feature:
+
+```bash
+node demo.js              # Interactive — press Enter between steps
+node demo.js --fast       # Auto-advance with 2s pauses
+node demo.js --instant    # No pauses, just output
+```
+
+Great for screen recording a product demo video.
+
+---
+
+## Policies
+
+- [Terms of Service](https://recipe-mcp.github.io/recipe-mcp/terms.html)
+- [Refund Policy](https://recipe-mcp.github.io/recipe-mcp/refund.html) — 14-day money-back guarantee on all paid plans
 
 ---
 
